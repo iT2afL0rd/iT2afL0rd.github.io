@@ -1,0 +1,114 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>Cycript高级技巧 | iT2afL0rd's Blog</title><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/very-simple.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"></head><body><!-- include the sidebar--><!-- include ./includes/sidebar.jade--><!-- Blog title and subtitle--><header><div class="container header"><a id="logo" href="/." class="title">iT2afL0rd's Blog</a><span class="subtitle">Energy and Persistence conquers</span><label id="toggle-menu" for="menu" onclick><i class="fa fa-bars"></i></label></div></header><!-- use checkbox hack for toggle nav-bar on small screens--><input id="menu" type="checkbox"><!-- Navigation Links--><nav id="nav"><div class="container"><a href="/" class="sidebar-nav-item active">Home</a><a href="/archives" class="sidebar-nav-item">Archives</a></div></nav><div id="header-margin-bar"></div><!-- gallery that comes before the header--><div class="wrapper"><div class="container post-header"><h1>Cycript高级技巧</h1></div></div><div class="wrapper"><div class="container meta"><div class="post-time">2014-01-12</div><div class="post-categories"><a class="post-category-link" href="/categories/iOS/">iOS</a></div><div class="post-tags"><a class="post-tag-link" href="/tags/Cycript/">Cycript</a></div></div></div><article><div class="container post"><p></p>
+<div class="row post"><br><br><div class="col-md-9"><br><br><div class="mypage"><br><br><em>   # 引言<br><br>    在分析iOS应用程序的时候，经常会用到Cycript这个工具。本文将介绍使用Cycript的一些基本命令和高级技巧。
+
+</em>   # 打印Ivar值<br><br>    很多时候输入<em>varName就可以：<br><br><figure class="highlight objc"><br><br><pre><br><br><div class="line">cy<span class="preprocessor"># </span></div></pre></figure></em>controller</div>
+
+<div class="line">{isa:<span class="string">“PrefsRootController”</span>,_contentView:<span class="string">“<uiview: 320="" 0x10bd70;="" frame="(0" 0;="" 460);="" autoresize="W+H;" layer="<CALayer:" 0x150120="">&gt;”</uiview:></span>,_navBar:…</div>
+
+<div class="line">cy<span class="preprocessor">#</span></div>
+
+<p></p>
+<p></p>
+<p>然而有时候却不行：</p>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">cy<span class="preprocessor"># *UIApp</span></div><br><br><div class="line">{message:<span class="string">“hasProperty callback returned true for a property that doesn’t exist.”</span>,name:<span class="string">“ReferenceError”</span>}</div><br><br></pre><br><br></figure>
+
+<p>但是你可以这样：</p>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">cy<span class="preprocessor"># [i for (i in *UIApp)]</span></div><br><br><div class="line">[<span class="string">“isa”</span>,<span class="string">“_delegate”</span>,<span class="string">“_touchMap”</span>,<span class="string">“_exclusiveTouchWindows”</span>,<span class="string">“_event”</span>,…</div><br><br></pre><br><br></figure>
+
+<p><a id="more"></a></p>
+<p>为了取得尽可能多的ivar值，你可以用下面这个函数：</p>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">function tryPrintIvars(a){ var x={}; <span class="keyword">for</span>(i <span class="keyword">in</span> <em>a){ try{ x[i] = (</em>a)[i]; } catch(e){} } <span class="keyword">return</span> x; }</div><br><br></pre><br><br></figure>
+
+<p>用法是：</p>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">cy<span class="preprocessor"># *a</span></div><br><br><div class="line">{message:<span class="string">“hasProperty callback returned true for a property that doesn’t exist.”</span>,name:<span class="string">“ReferenceError”</span>}</div><br><br><div class="line">cy<span class="preprocessor"># tryPrintIvars(a)</span></div><br><br><div class="line">{isa:<span class="string">“SBWaveView”</span>,_layer:<span class="string">“<calayer: 0x2a5160="">“</calayer:></span>,_tapInfo:null,_gestureInfo:null,_gestureRecognizers:…</div><br><br></pre><br><br></figure>
+
+<ul>
+<li><h1 id="打印方法名"><a href="#打印方法名" class="headerlink" title="打印方法名"></a>打印方法名</h1><p>可以取得方法名的函数：</p>
+</li>
+</ul>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">function printMethods(className) {</div><br><br><div class="line">  var count = new new Type(<span class="string">“I”</span>);</div><br><br><div class="line">  var methods = class_copyMethodList(objc_getClass(className), count);</div><br><br><div class="line">  var methodsArray = [];</div><br><br><div class="line">  <span class="keyword">for</span>(var i = <span class="number">0</span>; i &lt; *count; i++) {</div><br><br><div class="line">    var method = methods[i];</div><br><br><div class="line">    methodsArray<span class="variable">.push</span>({selector:method_getName(method), implementation:method_getImplementation(method)});</div><br><br><div class="line">  }</div><br><br><div class="line">  free(methods);</div><br><br><div class="line">  free(count);</div><br><br><div class="line">  <span class="keyword">return</span> methodsArray;</div><br><br><div class="line">}</div><br><br></pre><br><br></figure>
+
+<p>可以这样用：</p>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">cy<span class="preprocessor"># printMethods(<span class="title">“MailboxPrefsTableCell”</span>)</span></div><br><br><div class="line">[{selector:<span class="keyword">@selector</span>(layoutSubviews),implementation:<span class="number">0x302bf2e9</span>},{selector:<span class="keyword">@selector</span>(setCurrentMailbox:),implementation:<span class="number">0x302bee0d</span>},…</div><br><br><div class="line">cy<span class="preprocessor">#</span></div><br><br></pre><br><br></figure>
+
+<p>你也可以只看isa的消息属性，例如用UIApp.keyWindow.rootViewController.isa.messages可以取得rootViewControllers的方法。</p>
+<p><strong><em>用正则表达式取方法名</em></strong></p>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">function methodsMatching(cls, regexp) { <span class="keyword">return</span> [[new Selector(m)<span class="variable">.type</span>(cls), m] <span class="keyword">for</span> (m <span class="keyword">in</span> cls<span class="variable">.messages</span>) <span class="keyword">if</span> (!regexp || regexp<span class="variable">.test</span>(m))]; }</div><br><br></pre><br><br></figure>
+
+<p>用法：</p>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">cy<span class="preprocessor"># methodsMatching(NSRunLoop, /forKey:$/)</span></div><br><br><div class="line">[[<span class="string">“v20@0:4I8@12@16”</span>,<span class="string">“didChange:valuesAtIndexes:forKey:”</span>],[<span class="string">“v20@0:4I8@12@16”</span>,<span class="string">“willChange:valuesAtIndexes:forKey:”</span>],[<span class="string">“v16@0:4@8@12”</span>,<span class="string">“setValue:forKey:”</span>]]</div><br><br></pre><br><br></figure>
+
+<ul>
+<li><h1 id="从地址获取Objective-C对象"><a href="#从地址获取Objective-C对象" class="headerlink" title="从地址获取Objective-C对象"></a>从地址获取Objective-C对象</h1><p>用new Instance(0xdeadbabe)：</p>
+</li>
+</ul>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">cy<span class="preprocessor"># var p = new Instance(0x8614390)</span></div><br><br><div class="line">cy<span class="preprocessor"># p</span></div><br><br><div class="line">[<span class="string">“<skpaymenttransaction: 0x8613d80="">“</skpaymenttransaction:></span>]</div><br><br></pre><br><br></figure>
+
+<ul>
+<li><h1 id="载入框架"><a href="#载入框架" class="headerlink" title="载入框架"></a>载入框架</h1></li>
+</ul>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">function loadFramework(fw) {</div><br><br><div class="line">  var h=<span class="string">“/System/Library/“</span>,t=<span class="string">“Frameworks/“</span>+fw+<span class="string">“.framework”</span>;</div><br><br><div class="line">  [[<span class="built_in">NSBundle</span> bundleWithPath:h+t]||[<span class="built_in">NSBundle</span> bundleWithPath:h+<span class="string">“Private”</span>+t] load];</div><br><br><div class="line">}</div><br><br></pre><br><br></figure>
+
+<ul>
+<li><h1 id="替换Objective-C方法"><a href="#替换Objective-C方法" class="headerlink" title="替换Objective-C方法"></a>替换Objective-C方法</h1><p>你可以通过替换messages数组的内容来模拟MSHookMessage：</p>
+</li>
+</ul>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">cy<span class="preprocessor"># original_NSRunLoop_description = NSRunLoop.messages[‘description’];</span></div><br><br><div class="line"><span class="number">0x339d94c3</span></div><br><br><div class="line">cy<span class="preprocessor"># NSRunLoop.messages[‘description’] = function() { return original_NSRunLoop_description.call(this).toString().substr(0, 80)+<span class="title">“, etc.”</span>; }</span></div><br><br><div class="line">{}</div><br><br><div class="line">cy<span class="preprocessor"># [NSRunLoop currentRunLoop]</span></div><br><br><div class="line"><span class="string">“<cfrunloop 0x205ee0="" [0x381dbff4]="">{locked = false, wait port = 0x1303, stopped = , etc.”</cfrunloop></span></div><br><br></pre><br><br></figure>
+
+<p>注意func.call(this)的结构，就是它把原函数的this绑定到用户指定的那个去了。如果需要更多地参数，用function(arg1, arg2, arg3, …) {…func.call(self, arg1, arg2, arg3, …);}来代替，例如：</p>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">cy<span class="preprocessor"># original_SpringBoard_menuButtonDown = SpringBoard.messages[‘menuButtonDown:’]</span></div><br><br><div class="line"><span class="number">0x17dbab1</span></div><br><br><div class="line">cy<span class="preprocessor"># SpringBoard.messages[‘menuButtonDown:’] = function(arg1) {original_SpringBoard_menuButtonDown.call(this, arg1);}</span></div><br><br><div class="line">function (e) {var e;var $cy0=<span class="keyword">this</span>;original_SpringBoard_menuButtonDown<span class="variable">.call</span>($cy0,e);}</div><br><br></pre><br><br></figure>
+
+<p>注意参数不会被自动映射到相对应的Objective-C类型，所以参数应该用[NSString stringWithString:”foo”]而不是简单的”foo”。</p>
+<p><strong><em>获取类方法</em></strong></p>
+<p>class.messages只包含实例方法。要hook类方法，你需要得到他的metaclass，一个简单地方法是：</p>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">cy<span class="preprocessor"># NSRunLoop-&gt;isa.messages[‘currentRunLoop’] = …</span></div><br><br></pre><br><br></figure>
+
+<ul>
+<li><h1 id="引入其他Cycript文件"><a href="#引入其他Cycript文件" class="headerlink" title="引入其他Cycript文件"></a>引入其他Cycript文件</h1><p>从0.9.274-1开始，取消了导入native文件的组件。当Cycript需要hook到其他进程时，既然数据都保留在那儿，你可以首先加载那个.cy文件：</p>
+</li>
+</ul>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">localhost:~ mobile$ cycript -p SpringBoard main<span class="variable">.cy</span></div><br><br><div class="line"><span class="number">0x12345678</span></div><br><br><div class="line">localhost:~ mobile$ cycript -p SpringBoard</div><br><br><div class="line">cy<span class="preprocessor"># …</span></div><br><br></pre><br><br></figure>
+
+<p>如果Cycript是独立启动的，使用Cycript编译器和Javascript的eval表达式相结合也可以使引入作伪：</p>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line"><span class="comment">// include other .cy files</span></div><br><br><div class="line">function include(fn) {</div><br><br><div class="line">  var t = [new NSTask init]; [t setLaunchPath:<span class="string">@”/usr/bin/cycript”</span>]; [t setArguments:[<span class="string">“-c”</span>, fn]];</div><br><br><div class="line">  var p = [NSPipe pipe]; [t setStandardOutput:p]; [t launch]; [t waitUntilExit]; </div><br><br><div class="line">  var s = [new <span class="built_in">NSString</span> initWithData:[[p fileHandleForReading] readDataToEndOfFile] encoding:<span class="number">4</span>];</div><br><br><div class="line">  <span class="keyword">return</span> <span class="keyword">this</span><span class="variable">.eval</span>(s<span class="variable">.toString</span>());</div><br><br><div class="line">}</div><br><br></pre><br><br></figure>
+
+<ul>
+<li><h1 id="使用NSLog"><a href="#使用NSLog" class="headerlink" title="使用NSLog"></a>使用NSLog</h1><p>在控制台输入：</p>
+</li>
+</ul>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">NSLog_ = dlsym(RTLD_DEFAULT, <span class="string">“NSLog”</span>)</div><br><br><div class="line"><span class="built_in">NSLog</span> = function() { var types = <span class="string">‘v’</span>, args = [], count = arguments<span class="variable">.length</span>; <span class="keyword">for</span> (var i = <span class="number">0</span>; i != count; ++i) { types += <span class="string">‘@’</span>; args<span class="variable">.push</span>(arguments[i]); } new Functor(NSLog_, types)<span class="variable">.apply</span>(null, args); }</div><br><br></pre><br><br></figure>
+
+<p>然后就可以像平常一样使用NSLog：</p>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">cy<span class="preprocessor"># NSLog_ = dlsym(RTLD<em>DEFAULT, <span class="title">“NSLog”</span>)</em></span></div><br><br><div class="line"><span class="number">0x31451329</span></div><br><br><div class="line">cy<span class="preprocessor"># NSLog = function() { var types = ‘v’, args = [], count = arguments.length; for (var i = 0; i != count; ++i) { types += ‘@’; args.push(arguments[i]); } new Functor(NSLog, types).apply(null, args); }</span></div><br><br><div class="line">{}</div><br><br><div class="line">cy<span class="preprocessor"># NSLog(<span class="title">“w ivars: %@”</span>, tryPrintIvars(w))</span></div><br><br></pre><br><br></figure>
+
+<p>如果已经attach到一个进程了，输出就已经写到syslog了：</p>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">Nov <span class="number">17</span> <span class="number">20</span>:<span class="number">26</span>:<span class="number">01</span> iPhone3GS Foobar[<span class="number">551</span>]: w ivars: {\n    contentView = &lt;<span class="built_in">UIView</span>: <span class="number">0x233ea0</span>; ….}</div><br><br></pre><br><br></figure>
+
+<ul>
+<li><h1 id="使用CGGeometry功能"><a href="#使用CGGeometry功能" class="headerlink" title="使用CGGeometry功能"></a>使用CGGeometry功能</h1><p>为了使用CGGeometry类的函数，必须要在Cycript窗体输入：</p>
+</li>
+</ul>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">function CGPointMake(x, y) { <span class="keyword">return</span> {x:x, y:y}; }</div><br><br><div class="line">function CGSizeMake(w, h) { <span class="keyword">return</span> {width:w, height:h}; }</div><br><br><div class="line">function CGRectMake(x, y, w, h) { <span class="keyword">return</span> {origin:CGPointMake(x,y), size:CGSizeMake(w, h)}; }</div><br><br></pre><br><br></figure>
+
+<ul>
+<li><h1 id="将Cycript输出写入文件"><a href="#将Cycript输出写入文件" class="headerlink" title="将Cycript输出写入文件"></a>将Cycript输出写入文件</h1><p>Cycript的输出时NSString，所以调用writeToFile然后把它保存起来时可能的，例如：</p>
+</li>
+</ul>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">[[someObject someFunction] writeToFile:<span class="string">“/var/mobile/cycriptoutput.txt”</span> atomically:<span class="literal">NO</span> encoding:<span class="number">4</span> error:<span class="literal">NULL</span>]</div><br><br></pre><br><br></figure>
+
+<p>你可以这么用，下面是获取SpringBoard view的结构的示例：</p>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">iPhone:~$ cycript -p SpringBoard</div><br><br><div class="line">cy<span class="preprocessor"># [[UIApp-&gt;_uiController.window recursiveDescription] writeToFile:<span class="title">“/var/mobile/viewdump.txt”</span> atomically:NO encoding:4 error:NULL]</span></div><br><br></pre><br><br></figure>
+
+<ul>
+<li><h1 id="打印View的继承关系"><a href="#打印View的继承关系" class="headerlink" title="打印View的继承关系"></a>打印View的继承关系</h1></li>
+</ul>
+<figure class="highlight objc"><br><br><pre><br><br><div class="line">iPhone:~$ cycript -p SpringBoard</div><br><br><div class="line">cy# ?expand</div><br><br><div class="line">expand == true</div><br><br><div class="line">cy# UIApp.keyWindow.recursiveDescription</div><br><br><div class="line">“<uiwindow: 320="" 0x13a900;="" frame="(0" 0;="" 480);="" opaque="NO;" autoresize="RM+BM;" layer="<CALayer:" 0x13a9d0="">&gt;</uiwindow:></div><br><br><div class="line">    <uitextfield: 280="" 0x13abf0;="" frame="(20" 40;="" 31);="" text="" ;="" opaque="NO;" autoresize="RM+BM;" layer="<CALayer:" 0x13ad10="">&gt;</uitextfield:></div><br><br><div class="line">        <uitextfieldroundedrectbackgroundview: 280="" 0x143d10;="" frame="(0" 0;="" 31);="" userinteractionenabled="NO;" layer="<CALayer:" 0x143dc0="">&gt;</uitextfieldroundedrectbackgroundview:></div><br><br><div class="line">            <uiimageview: 8="" 0x144030;="" frame="(0" 0;="" 15);="" opaque="NO;" userinteractionenabled="NO;" layer="<CALayer:" 0x1440b0="">&gt;</uiimageview:></div><br><br><div class="line">            <uiimageview: 264="" 0x144400;="" frame="(8" 0;="" 15);="" opaque="NO;" userinteractionenabled="NO;" layer="<CALayer:" 0x144430="">&gt;</uiimageview:></div><br><br><div class="line">            <uiimageview: 8="" 0x144460;="" frame="(272" 0;="" 15);="" opaque="NO;" userinteractionenabled="NO;" layer="<CALayer:" 0x144490="">&gt;</uiimageview:></div><br><br><div class="line">            <uiimageview: 0="" 0x1444c0;="" frame="(8" 0;="" 15);="" userinteractionenabled="NO;" layer="<CALayer:" 0x1444f0="">&gt;</uiimageview:></div><br><br><div class="line">            <uiimageview: 8="" 0x144520;="" frame="(0" 15;="" 1);="" opaque="NO;" userinteractionenabled="NO;" layer="<CALayer:" 0x144550="">&gt;</uiimageview:></div><br><br><div class="line">            <uiimageview: 264="" 0x144580;="" frame="(8" 15;="" 1);="" opaque="NO;" userinteractionenabled="NO;" layer="<CALayer:" 0x1445b0="">&gt;</uiimageview:></div><br><br><div class="line">            <uiimageview: 8="" 0x1445e0;="" frame="(272" 15;="" 1);="" opaque="NO;" userinteractionenabled="NO;" layer="<CALayer:" 0x144610="">&gt;</uiimageview:></div><br><br><div class="line">            <uiimageview: 0="" 0x144640;="" frame="(8" 15;="" 1);="" userinteractionenabled="NO;" layer="<CALayer:" 0x144670="">&gt;</uiimageview:></div><br><br><div class="line">            <uiimageview: 8="" 0x1446a0;="" frame="(0" 16;="" 15);="" opaque="NO;" userinteractionenabled="NO;" layer="<CALayer:" 0x1446d0="">&gt;</uiimageview:></div><br><br><div class="line">            <uiimageview: 264="" 0x144700;="" frame="(8" 16;="" 15);="" opaque="NO;" userinteractionenabled="NO;" layer="<CALayer:" 0x144730="">&gt;</uiimageview:></div><br><br><div class="line">            <uiimageview: 8="" 0x144760;="" frame="(272" 16;="" 15);="" opaque="NO;" userinteractionenabled="NO;" layer="<CALayer:" 0x144790="">&gt;</uiimageview:></div><br><br><div class="line">            <uiimageview: 0="" 0x1447c0;="" frame="(8" 16;="" 15);="" userinteractionenabled="NO;" layer="<CALayer:" 0x1447f0="">&gt;</uiimageview:></div><br><br><div class="line">        <uilabel: 266="" 0x13aaf0;="" frame="(9" 8;="" 15);="" text="Test" ;="" clipstobounds="YES;" opaque="NO;" userinteractionenabled="NO;" layer="<CALayer:" 0x1399f0="">&gt;”</uilabel:></div><br><br></pre><br><br></figure>
+
+<p>?expand命令使换行显示的更加正常，而不仅仅是\n。</p>
+<ul>
+<li><h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a href="http://iphonedevwiki.net/index.php/Cycript_Tricks" title="cycript tricks" target="_blank" rel="external">Cycript Tricks</a></p>
+</li>
+</ul>
+</div></div></div><!-- comment system--><div data-thread-key="2014/01/12/ios/cycript-tricks/" data-title="Cycript高级技巧" data-url="http://lsq.me/2014/01/12/ios/cycript-tricks/" class="container ds-share flat"><div class="ds-share-inline"><ul class="ds-share-icons-16"><li data-toggle="ds-share-icons-more"><a href="javascript:void(0);" class="ds-more">分享到：</a></li><li><a href="javascript:void(0);" data-service="weibo" class="ds-weibo">微博</a></li><li><a href="javascript:void(0);" data-service="qzone" class="ds-qzone">QQ空间</a></li><li><a href="javascript:void(0);" data-service="qqt" class="ds-qqt">腾讯微博</a></li><li><a href="javascript:void(0);" data-service="wechat" class="ds-wechat">微信</a></li></ul><div class="ds-share-icons-more"></div></div></div><div class="container"><hr><div data-thread-key="2014/01/12/ios/cycript-tricks/" data-title="Cycript高级技巧" data-url="http://lsq.me/2014/01/12/ios/cycript-tricks/" data-author-key="1" class="ds-thread"></div></div></article><footer id="footer"><div class="container"><div class="bar"><div class="social"><a href="mailto:qsunme@126.com" target="_blank"><i class="fa fa-envelope-o"></i></a><a href="https://github.com/iT2afL0rd" target="_blank"><i class="fa fa-github"></i></a><a href="/atom.xml" target="_blank"><i class="fa fa-rss"></i></a></div><div class="footer">© 2016 <a href="/" rel="nofollow">iT2afL0rd's Blog</a>. Powered by <a rel="nofollow" target="_blank" href="https://hexo.io">Hexo</a>. Theme <a target="_blank" href="https://github.com/lotabout/very-simple">very-simple</a>.</div></div></div></footer><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+    $(".fancybox").fancybox();
+});</script></body></html>

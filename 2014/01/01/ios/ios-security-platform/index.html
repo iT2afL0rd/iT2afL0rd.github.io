@@ -1,0 +1,61 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>iOS安全（一）之渗透测试平台搭建 | iT2afL0rd's Blog</title><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/very-simple.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"></head><body><!-- include the sidebar--><!-- include ./includes/sidebar.jade--><!-- Blog title and subtitle--><header><div class="container header"><a id="logo" href="/." class="title">iT2afL0rd's Blog</a><span class="subtitle">Energy and Persistence conquers</span><label id="toggle-menu" for="menu" onclick><i class="fa fa-bars"></i></label></div></header><!-- use checkbox hack for toggle nav-bar on small screens--><input id="menu" type="checkbox"><!-- Navigation Links--><nav id="nav"><div class="container"><a href="/" class="sidebar-nav-item active">Home</a><a href="/archives" class="sidebar-nav-item">Archives</a></div></nav><div id="header-margin-bar"></div><!-- gallery that comes before the header--><div class="wrapper"><div class="container post-header"><h1>iOS安全（一）之渗透测试平台搭建</h1></div></div><div class="wrapper"><div class="container meta"><div class="post-time">2014-01-01</div><div class="post-categories"><a class="post-category-link" href="/categories/iOS/">iOS</a></div><div class="post-tags"><a class="post-tag-link" href="/tags/Jailbreak/">Jailbreak</a>/<a class="post-tag-link" href="/tags/class-dump/">class-dump</a></div></div></div><article><div class="container post"><ul>
+<li><h1 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h1><p>在当前流行的移动平台中，iOS占据着很重要的一个部分。iOS平台上有着大量的应用程序，App Store的日下载量更是惊人。如果你对iOS的应用程序感兴趣，或者你对iOS平台的安全性感兴趣。<br>这篇文章很适合你，因为我们将学习对iOS应用程序进行渗透测试以及漏洞评估的一系列工具和技巧。</p>
+</li>
+<li><h1 id="越狱"><a href="#越狱" class="headerlink" title="越狱"></a>越狱</h1><p>要对iOS应用程序进行深入研究，一个越狱的设备是必不可少的。这一节里将介绍如何越狱你的iOS设备。越狱之后有很多好处，可以安装很多工具，甚至可以运行自己写的脚本。<a id="more"></a><br>下面简要介绍下我的环境：<br>PC: Windows 7 64bit<br>iOS: iPhone 4S version 7.0.4</p>
+</li>
+</ul>
+<p>设备信息：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/IMG_0123.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/IMG_0123.png" alt="IMG_0123"></a></p>
+<p>下面开始越狱，要越狱首先要去这里下载<a href="https://evad3rs.app.box.com/s/hzapsnk73mbrs770z50y" title="越狱工具" target="_blank" rel="external">越狱工具</a>，目前这个工具是支持iOS 7的完美越狱的，越狱前有两点要注意：</p>
+<ol>
+<li><span style="line-height: 1.5em;">如果你的设备也是7.0.4而且是通过OTA升级的，请连上电脑用iTunes重刷一遍7.0.4，不然会有白苹果的风险。</span></li>
+<li><span style="line-height: 1.5em;">越狱前请备份你的资料。</span><br>打开越狱工具，连接上你的设备，你会看到：</li>
+</ol>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/jailbreak_1.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/jailbreak_1.jpg" alt="jailbreak_1"></a></p>
+<p>直接点击Jailbreak按钮，越狱就会自动开始，一会之后你的设备会重启，也会提示你解锁你的设备，按照提示来就行。重启之后桌面上会多一个Jailbreak的图标，这时越狱工具会提示你点击这个图标，点击图标然后继续等待，大约再重启一次之后就好了。<br>由于我的设备已经越狱了，所以这里的图有点少，现在越狱很简单，按照提示来就行了。<br>越狱完成之后你会发现你的桌面上多了一个Cydia的图标，恭喜你，你成功了！如图右下角：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/IMG_0124.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/IMG_0124.png" alt="IMG_0124"></a></p>
+<ul>
+<li><span style="font-size: 2em;">工具</span><br>现在你已经完成了设备的越狱，接下来就是安装一些重要的命令行工具，例如：ps，wget，apt-get，openssh等。</li>
+</ul>
+<p><em><strong>OpenSSH</strong></em></p>
+<p>OpenSSH可以让你从你的PC登录到你的iOS设备。进入Cydia，点击底部最右边的Search标签，然后搜索OpenSSH：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/IMG_0125.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/IMG_0125.png" alt="IMG_0125"></a></p>
+<p>选择第一个搜索的结果，点击去之后可以看到：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/IMG_0126.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/IMG_0126.png" alt="IMG_0126"></a></p>
+<p>点击右上角的Install，然后出现下图的界面：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/IMG_0127.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/IMG_0127.png" alt="IMG_0127"></a></p>
+<p>继续点右上角的Confirm，然后就开始安装了：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/IMG_0128.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/IMG_0128.png" alt="IMG_0128"></a></p>
+<p>安装完成之后点下面的Return to Cydia就OK了。</p>
+<p><em><strong>BigBoss Recommendation Tools</strong></em></p>
+<p>在我们用ssh登陆到设备之前，我们还需要安装其他一些工具。这里我推荐安装BigBoss Recommendation Tools，几乎流行的黑客工具都可以在这个包里找到。<br>和安装OpenSSH类似，进入Cydia之后，搜索，点击右上角的Install，然后右上角Confirm，安装结束之后Return to Cydia。这里就不上图了，操作很简单。这时，有些重要的工具如：GNU Debugger，make，unzip，wget和SQLite就都安装好了。</p>
+<p><em><strong>MobileTerminal</strong></em></p>
+<p>还有一个很重要的工具是MobileTerminal，可以让你直接在iOS设备上进行命令行操作而不是通过ssh登陆到你的设备。安装过程仍然和上面的一样，这里就不赘述了。<br>安装完成后你会发现你的桌面上多了一个Terminal的图标：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/IMG_0133.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/IMG_0133.png" alt="IMG_0133"></a></p>
+<p>打开这个Terminal，然后试试运行几个常用的Unix命令，这里我用了ps和ls：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/IMG_0134.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/IMG_0134.png" alt="IMG_0134"></a></p>
+<ul>
+<li><h1 id="登陆"><a href="#登陆" class="headerlink" title="登陆"></a>登陆</h1><p>既然上面的工具都已经准备好了，下面就让我们看看能不能通过SSH登陆到这个越狱的设备。首先需要确保电脑和设备在同一个网络中，然后再查看越狱设备的IP地址。到设置（Settings），WLAN中找到现在连接的网络，然后点开，就可以看到IP地址，如下图：</p>
+</li>
+</ul>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/IMG_0135.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/IMG_0135.png" alt="IMG_0135"></a></p>
+<p>可以看到，IP地址是192.168.1.109。打开你的SSH工具，我这里的是Putty，输入IP地址，然后Connection Type选择SSH，再点击Open：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/putty_1.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/putty_1.jpg" alt="putty_1"></a></p>
+<p>在弹出的窗口中，我们使者以root用户登录，输入用户名：root，再输入root的默认密码：alpine。可以看到，成功登录进去了：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/putty_2.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/putty_2.jpg" alt="putty_2"></a></p>
+<p>这里推荐你修改默认的root密码，因为有些恶意软件会利用这个密码登录到你的设备进行一些恶意行为。输入命令passwd然后回车再按提示输入两次新密码即可。<br>登录之后我们运行下apt-get获取最新的包列表：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/apt-get.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/apt-get.jpg" alt="apt-get"></a></p>
+<p><em><strong>class-dump-z</strong></em></p>
+<p>下面要安装的class-dump-z是iOS应用程序审计中最常用的工具，用它可以到处应用的类信息（class information）。我们可以到它的<a href="https://code.google.com/p/networkpx/wiki/class_dump_z" title="class-dump-z" target="_blank" rel="external">官网</a>下载，我们可以拷贝官网版本0.2a的链接，到设备中用wget下载。命令为：wget [拷贝的URL]。下载完成后，用tar来解压：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/tar.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/tar.jpg" alt="tar"></a></p>
+<p>解压完成后，进入iphone_armv6目录，然后复制class-dump-z到/usr/bin，这样你就可以在设备的任何目录运行class-dump了。然后运行class-dump-z，看到有Usage提示信息，那么安装就成功了。</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/dump.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/dump.jpg" alt="dump"></a></p>
+<ul>
+<li><h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>到这里，我们要搭建的测试和审计环境就基本完成了，接下来会继续介绍如何使用class-dump-z来分析应用的类信息。</p>
+</li>
+</ul>
+<p>参考文献：</p>
+<p><a href="http://resources.infosecinstitute.com/ios-application-security-part-1-setting-up-a-mobile-pentesting-platform/" target="_blank" rel="external">http://resources.infosecinstitute.com/ios-application-security-part-1-setting-up-a-mobile-pentesting-platform/</a></p>
+</div><!-- comment system--><div data-thread-key="2014/01/01/ios/ios-security-platform/" data-title="iOS安全（一）之渗透测试平台搭建" data-url="http://lsq.me/2014/01/01/ios/ios-security-platform/" class="container ds-share flat"><div class="ds-share-inline"><ul class="ds-share-icons-16"><li data-toggle="ds-share-icons-more"><a href="javascript:void(0);" class="ds-more">分享到：</a></li><li><a href="javascript:void(0);" data-service="weibo" class="ds-weibo">微博</a></li><li><a href="javascript:void(0);" data-service="qzone" class="ds-qzone">QQ空间</a></li><li><a href="javascript:void(0);" data-service="qqt" class="ds-qqt">腾讯微博</a></li><li><a href="javascript:void(0);" data-service="wechat" class="ds-wechat">微信</a></li></ul><div class="ds-share-icons-more"></div></div></div><div class="container"><hr><div data-thread-key="2014/01/01/ios/ios-security-platform/" data-title="iOS安全（一）之渗透测试平台搭建" data-url="http://lsq.me/2014/01/01/ios/ios-security-platform/" data-author-key="1" class="ds-thread"></div></div></article><footer id="footer"><div class="container"><div class="bar"><div class="social"><a href="mailto:qsunme@126.com" target="_blank"><i class="fa fa-envelope-o"></i></a><a href="https://github.com/iT2afL0rd" target="_blank"><i class="fa fa-github"></i></a><a href="/atom.xml" target="_blank"><i class="fa fa-rss"></i></a></div><div class="footer">© 2016 <a href="/" rel="nofollow">iT2afL0rd's Blog</a>. Powered by <a rel="nofollow" target="_blank" href="https://hexo.io">Hexo</a>. Theme <a target="_blank" href="https://github.com/lotabout/very-simple">very-simple</a>.</div></div></div></footer><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+    $(".fancybox").fancybox();
+});</script></body></html>

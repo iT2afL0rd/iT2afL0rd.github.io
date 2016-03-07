@@ -1,0 +1,62 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>iOS安全（四）之用Cycript进行运行时分析 | iT2afL0rd's Blog</title><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/very-simple.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"></head><body><!-- include the sidebar--><!-- include ./includes/sidebar.jade--><!-- Blog title and subtitle--><header><div class="container header"><a id="logo" href="/." class="title">iT2afL0rd's Blog</a><span class="subtitle">Energy and Persistence conquers</span><label id="toggle-menu" for="menu" onclick><i class="fa fa-bars"></i></label></div></header><!-- use checkbox hack for toggle nav-bar on small screens--><input id="menu" type="checkbox"><!-- Navigation Links--><nav id="nav"><div class="container"><a href="/" class="sidebar-nav-item active">Home</a><a href="/archives" class="sidebar-nav-item">Archives</a></div></nav><div id="header-margin-bar"></div><!-- gallery that comes before the header--><div class="wrapper"><div class="container post-header"><h1>iOS安全（四）之用Cycript进行运行时分析</h1></div></div><div class="wrapper"><div class="container meta"><div class="post-time">2014-01-14</div><div class="post-categories"><a class="post-category-link" href="/categories/iOS/">iOS</a></div><div class="post-tags"><a class="post-tag-link" href="/tags/Cycript/">Cycript</a></div></div></div><article><div class="container post"><ul>
+<li><h1 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h1><p>在前面的文章中，我们学习了用Objective-C Cocoa 框架编写的iOS应用的运行时能力。本文里，我们将学习如何使用一个基础的工具Cycript来在运行时分析和修改iOS应用程序。本文将以国内很有名的墨迹天气为例，介绍如何在运行时进行分析。</p>
+</li>
+<li><h1 id="Cycript"><a href="#Cycript" class="headerlink" title="Cycript"></a>Cycript</h1><p>Cycript是一个能理解Obiective-C语法的Javascript解释器，这意味着我们在一个命令中可以用Objective-C或者Javascript，甚至二者混用。它能够挂钩正在运行的进程，能够在运行时修改应用的很多东西。使用Cycript有如下好处：</p>
+</li>
+<li><p>我们能够挂钩正在运行的进程，并且找出使用的类，例如view controllers，内部和第三方库，甚至程序的delegate的名称。</p>
+</li>
+<li><p>对于一个特定的类，例如View Controller, App delegate或者任何其他的类，我们能够得到所有的方法名称。</p>
+</li>
+<li>我们能够得到所有实例变量的名称和在程序运行的任意时刻实例变量的值。</li>
+<li>我们能够在运行时修改实例变量的值。</li>
+<li>我们能够执行Method Swizzling，例如替换一个特定方法的实现。</li>
+<li>我们可以在运行时调用任意方法，即使这个方法目前并不在应用的实际代码当中。<a id="more"></a>* # 安装Cycript<br>为了安装Cycript，你需要从<a href="http://www.cycript.org/" title="Cycript" target="_blank" rel="external">官网</a>上下载，这里请注意，如果你和我是一样的环境（iPhone 4S和iOS 7.0.4），最新版本会有问题，这里我推荐安装0.9.458版本，如下图：</li>
+</ul>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/cycript_download2.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/cycript_download2.jpg" alt="cycript_download2"></a></p>
+<p>下载完成后，使用sftp工具将它传到你的设备中，然后使用dpkg命令来安装它。Cycript依赖于MobileSubstrate和libffi，这两个都是Cydia自带的，如果你安装Cycript有问题，请确认是否安装了这两个依赖包。安装完成后，使用cycript命令来看它是否能正常运行：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/cycript_install2.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/cycript_install2.jpg" alt="cycript_install2"></a></p>
+<ul>
+<li><h1 id="用Cycript进行实时修改"><a href="#用Cycript进行实时修改" class="headerlink" title="用Cycript进行实时修改"></a>用Cycript进行实时修改</h1><p>下面我们就介绍如何来分析墨迹天气。装好墨迹天气之后，请先启动并确保它运行在前台。如果它在后台运行，就会被暂停，我们什么也做不了。通过ssh连接到设备，用ps命令找到墨迹天气的进程id，然后用cycript -p 挂钩到该进程：</p>
+</li>
+</ul>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/moji_1.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/moji_1.jpg" alt="moji_1"></a></p>
+<p>成功挂钩之后，通过UIApp.delegate 和 UIApp.keyWindow.rootViewController找到他的delegate和rootViewController：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/moji_2.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/moji_2.jpg" alt="moji_2"></a></p>
+<p>这里找到了它的rootViewController是ParentViewController，它就是当前显示的界面并来和用户交互的类。这里很自然就想到，它可以接受用户的交互（例如点击），然后调用方法来处理。所以如果我们可以查看这个类的所有方法并直接调用的话，就达到了我们的目的了。</p>
+<ul>
+<li><h1 id="调用应用中类的方法"><a href="#调用应用中类的方法" class="headerlink" title="调用应用中类的方法"></a>调用应用中类的方法</h1><p>如何查看类的方法，<a href="http://www.wildpointer.cn/2014/01/cycript-tricks/" title="cycript" target="_blank" rel="external">这里</a>有详细的介绍。我们就直接拿来用了，在cycript里面输入下面这段代码：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">function printMethods(className) &#123;</span><br><span class="line"> var count = new new Type(<span class="string">"I"</span>);</span><br><span class="line"> var methods = class_copyMethodList(objc_getClass(className), count);</span><br><span class="line"> var methodsArray = [];</span><br><span class="line"> <span class="keyword">for</span>(var i = <span class="number">0</span>; i &lt; *count; i++) &#123;</span><br><span class="line"> var method = methods[i];</span><br><span class="line"> methodsArray.push(&#123;selector:method_getName(method), implementation:method_getImplementation(method)&#125;);</span><br><span class="line"> &#125;</span><br><span class="line"> free(methods);</span><br><span class="line"> free(count);</span><br><span class="line"> <span class="keyword">return</span> methodsArray;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>然后调用printMethods(ParentViewController)：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/moji_3.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/moji_3.jpg" alt="moji_3"></a></p>
+<p>可以看到下面的输出：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/moji_4.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/moji_4.jpg" alt="moji_4"></a></p>
+<p>在输出中我们发现有ShowCamera这么一个方法，很容易就猜到这是对应应用右上角的拍照按钮的。接下来就来调用一下这个方法，看看是不是和点击的效果一样，注意现在墨迹天气的界面是这样：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/IMG_0139.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/IMG_0139.png" alt="IMG_0139"></a></p>
+<p>然后我们模拟点击的效果：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/moji_5.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/moji_5.jpg" alt="moji_5"></a></p>
+<p>这时候再看手机的界面，已经变成了这样：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/IMG_0140.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/IMG_0140.png" alt="IMG_0140"></a></p>
+<p>说明达到了我们预想的效果，让我们在仔细看看刚刚ParentViewController类的方法，还有removeUserInfo，didReceiveMemoryWarning，willShowLeftDrawerController这样方法。从名字上就可以很清楚看明白它们的作用，可以一一调用来验证，这里就略过了。</p>
+<ul>
+<li><h1 id="查看应用中类的变量值"><a href="#查看应用中类的变量值" class="headerlink" title="查看应用中类的变量值"></a>查看应用中类的变量值</h1><p>请首先将墨迹天气返回到主界面，然后可以来查看ParentViewController类中的变量值。</p>
+</li>
+</ul>
+<p>仍然可以从<a href="http://www.wildpointer.cn/2014/01/cycript-tricks/" title="cycript" target="_blank" rel="external">这里</a>取得查看变量值得代码：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">function tryPrintIvars(a)&#123;</span><br><span class="line">	var x=&#123;&#125;;</span><br><span class="line">	for(i in _a) &#123;</span><br><span class="line">		try &#123; </span><br><span class="line">			x[i] = (_a)[i];</span><br><span class="line">		&#125; catch(e) &#123;</span><br><span class="line">		&#125; </span><br><span class="line">	&#125;</span><br><span class="line">	return x; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后调用tryPrintIvars(ParentViewController)继续查看ParentViewController类的变量值：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/moji_6.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/moji_6.jpg" alt="moji_6"></a></p>
+<p>这里的输出很多，但是可以发现一个变量叫：isLeftDrawerViewVisible=0，那么我们就将墨迹天气向右滑动到城市管理的界面，再看一次这个变量的值：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/moji_7.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/moji_7.jpg" alt="moji_7"></a></p>
+<p>现在它已经变成了0，所以这个变量在这个界面变化中发生了改变。在分析应用时，这种查看变量值的方法会有奇效，如果能结合方法的调用一起使用，会给分析带来极大的方便。</p>
+<ul>
+<li><h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>本文介绍了一个很强大的工具Cycript，并且介绍了如何用它在运行时分析应用。接下来还会介绍更多的Cycript的技术，并且将主要关注方法的替换。</p>
+</li>
+<li><h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a href="http://resources.infosecinstitute.com/ios-application-security-part-4-runtime-analysis-using-cycript-yahoo-weather-app/" title="ios-security-p4" target="_blank" rel="external">http://resources.infosecinstitute.com/ios-application-security-part-4-runtime-analysis-using-cycript-yahoo-weather-app/</a></p>
+</li>
+</ul>
+<p><a href="http://resources.infosecinstitute.com/ios-application-security-part-5-advanced-runtime-analysis-and-manipulation-using-cycript-yahoo-weather-app/" title="ios-security-p5" target="_blank" rel="external">http://resources.infosecinstitute.com/ios-application-security-part-5-advanced-runtime-analysis-and-manipulation-using-cycript-yahoo-weather-app/</a></p>
+</div><!-- comment system--><div data-thread-key="2014/01/14/ios/ios-security-cycript-runtime-analysis/" data-title="iOS安全（四）之用Cycript进行运行时分析" data-url="http://lsq.me/2014/01/14/ios/ios-security-cycript-runtime-analysis/" class="container ds-share flat"><div class="ds-share-inline"><ul class="ds-share-icons-16"><li data-toggle="ds-share-icons-more"><a href="javascript:void(0);" class="ds-more">分享到：</a></li><li><a href="javascript:void(0);" data-service="weibo" class="ds-weibo">微博</a></li><li><a href="javascript:void(0);" data-service="qzone" class="ds-qzone">QQ空间</a></li><li><a href="javascript:void(0);" data-service="qqt" class="ds-qqt">腾讯微博</a></li><li><a href="javascript:void(0);" data-service="wechat" class="ds-wechat">微信</a></li></ul><div class="ds-share-icons-more"></div></div></div><div class="container"><hr><div data-thread-key="2014/01/14/ios/ios-security-cycript-runtime-analysis/" data-title="iOS安全（四）之用Cycript进行运行时分析" data-url="http://lsq.me/2014/01/14/ios/ios-security-cycript-runtime-analysis/" data-author-key="1" class="ds-thread"></div></div></article><footer id="footer"><div class="container"><div class="bar"><div class="social"><a href="mailto:qsunme@126.com" target="_blank"><i class="fa fa-envelope-o"></i></a><a href="https://github.com/iT2afL0rd" target="_blank"><i class="fa fa-github"></i></a><a href="/atom.xml" target="_blank"><i class="fa fa-rss"></i></a></div><div class="footer">© 2016 <a href="/" rel="nofollow">iT2afL0rd's Blog</a>. Powered by <a rel="nofollow" target="_blank" href="https://hexo.io">Hexo</a>. Theme <a target="_blank" href="https://github.com/lotabout/very-simple">very-simple</a>.</div></div></div></footer><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+    $(".fancybox").fancybox();
+});</script></body></html>

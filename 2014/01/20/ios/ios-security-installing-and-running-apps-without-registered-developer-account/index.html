@@ -1,0 +1,63 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>iOS安全（六）之不注册开发者账号在设备上运行自定义应用 | iT2afL0rd's Blog</title><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/very-simple.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"></head><body><!-- include the sidebar--><!-- include ./includes/sidebar.jade--><!-- Blog title and subtitle--><header><div class="container header"><a id="logo" href="/." class="title">iT2afL0rd's Blog</a><span class="subtitle">Energy and Persistence conquers</span><label id="toggle-menu" for="menu" onclick><i class="fa fa-bars"></i></label></div></header><!-- use checkbox hack for toggle nav-bar on small screens--><input id="menu" type="checkbox"><!-- Navigation Links--><nav id="nav"><div class="container"><a href="/" class="sidebar-nav-item active">Home</a><a href="/archives" class="sidebar-nav-item">Archives</a></div></nav><div id="header-margin-bar"></div><!-- gallery that comes before the header--><div class="wrapper"><div class="container post-header"><h1>iOS安全（六）之不注册开发者账号在设备上运行自定义应用</h1></div></div><div class="wrapper"><div class="container meta"><div class="post-time">2014-01-20</div><div class="post-categories"><a class="post-category-link" href="/categories/iOS/">iOS</a></div><div class="post-tags"><a class="post-tag-link" href="/tags/Xcode/">Xcode</a></div></div></div><article><div class="container post"><ul>
+<li><h1 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h1><p>一般情况下，要在设备上测试应用，你需要每年花99美元注册成苹果的开发者。对于想要学习iOS应用程序安全的人来说，能在设备上运行应用程序很重要，不然就没法来测试它。对于不想在App Store发布应用的人来说，每年要花99美元很不值得。本文我们将看看在没有注册开发者账号的情况下，如何在越狱设备上构建和安装应用。在接下来的文章中，我们将看看如何在设备上运行我们自己的应用，使用Cycript来做method swizzling以及其它一些技术。</p>
+</li>
+</ul>
+<p>本文主要讲述了如果利用Xcode 4.5.2 在iOS 5.1 设备上运行自定义应用程序。请注意，同样的操作在其他版本的iOS或者Xcode上也许不行。如果你在设备上运行应用遇到了问题，你可以留言，我也会尽快答复。</p>
+<ul>
+<li><h1 id="创建自签名证书"><a href="#创建自签名证书" class="headerlink" title="创建自签名证书"></a>创建自签名证书</h1><p>那么现在开始，第一步是要创建自签名的证书，我们将用这个证书给想要在设备上运行的应用签名。<a id="more"></a></p>
+</li>
+</ul>
+<p>打开<em>Keychain Access</em>，依次点击<em>Keychain Access –&gt; Certificate Assistant –&gt; Create a Certificate：</em></p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat1.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat1.png" alt="070813_1648_IOSApplicat1"></a></p>
+<p>输入名字，这里我们输入<em>Prateekg</em>。<em>certificate type</em>选择<em>Code Signing</em>，不要选中<em>Let me override defaults</em>。然后点击<em>Create</em>，<em>Continue</em>。</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat2.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat2.png" alt="070813_1648_IOSApplicat2"></a></p>
+<p>这样，我们的证书就已经创建成功了。</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat3.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat3.png" alt="070813_1648_IOSApplicat3"></a></p>
+<p>现在，把/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Info.plist这个文件复制到桌面。这么做是因为我们要编辑这个文件，但是在原位置是无法编辑的。所以把它复制出来，编辑，然后再粘贴回去。</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat4.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat4.png" alt="070813_1648_IOSApplicat4"></a></p>
+<p>打开它：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat5.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat5.png" alt="070813_1648_IOSApplicat5"></a></p>
+<p>在这个文件中，把所有的<em>XCiPhoneOSCodeSignContext</em>替换成<em>XCCodeSignContext</em>，然后保存。这个文件看起来应该像这样：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat6.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat6.png" alt="070813_1648_IOSApplicat6"></a></p>
+<p>把这个文件粘贴到它原来的位置，你需要相应的权限才能这么做，用sudo就可以了。</p>
+<ul>
+<li><h1 id="创建Xcode工程"><a href="#创建Xcode工程" class="headerlink" title="创建Xcode工程"></a>创建Xcode工程</h1><p>现在是时候创建一个Xcode工程了，点击<em>Create a new Xcode Project</em>，选择<strong>Single View Application：</strong></p>
+</li>
+</ul>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat10.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat10.png" alt="070813_1648_IOSApplicat10"></a></p>
+<p>给工程起个名字，这里我叫<em>SelfSignedApp</em>，点击<em>Next</em>，然后再点<em>Create</em>：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat11.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat11.png" alt="070813_1648_IOSApplicat11"></a></p>
+<p>因为将要在iOS 5.1的设备上运行，所以需要确保选择了正确的部署目标。在左上的项目导航区选择工程名字，然后在Info里面， 设置部署目标为5.1，如下图所示。你可以根据你的设备运行的操作系统版本来选择部署目标。</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat12.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat12.png" alt="070813_1648_IOSApplicat12"></a></p>
+<p>因为我们在iOS 5.1上运行，并且我们用了Storyboard，但是iOS5.1并不支持Autolayout，请确保Use Autolayout选项没有被选中。 否则程序可能会因此crash。</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat13.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat13.png" alt="070813_1648_IOSApplicat13"></a></p>
+<p>现在开始拖放label到storyboard，在上面写些文字。</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat14.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat14.png" alt="070813_1648_IOSApplicat14"></a></p>
+<p>现在我们要让Xcode用我们自己生成的证书去签名。在左上的项目导航区选择工程名字，然后在Build Settings中选择我们生成的证书。</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat15.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat15.png" alt="070813_1648_IOSApplicat15"></a></p>
+<p>现在选择我们的应用要运行的设备。如果设备并没有在列表中显示，请到<em>Organizer-&gt; Devices -&gt;</em> 你的设备，选择 <em>Use for development。</em></p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat16.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat16.png" alt="070813_1648_IOSApplicat16"></a></p>
+<p>选择设备之后，点击运行，你会得到如下图的一个警告。点击总是允许。你可能会被提示设备或者Xcode错误，那请断开设备连接，重新打开Xcode，再次运行，这样应用就能部署到设备上。</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat17.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat17.png" alt="070813_1648_IOSApplicat17"></a></p>
+<p>也有其他方法让应用能够在设备上运行。构建应用时，Xcode会在一个特定的目录创建一个.app文件。默认地址是：/Users/$[YOUR_USER_NAME]/Library/Developer/Xcode/DerivedData/$[YOUR_APP_NAME_APP_ID]/Build/Products/Debug-iphoneos/。在我的系统上，地址是：/Users/prateekgianchandani/Library/Developer/Xcode/DerivedData/SelfSignedApp-bfzixtyoynrxxlgigskifizrfqqw/Build/Products/Debug-iphoneos/。用下面的命令复制这个.app文件到桌面上 ：</p>
+<p>mv /Users/$[YOUR_USER_NAME]/Library/Developer/Xcode/DerivedData/$[YOUR_APP_NAME_APP_ID]/Build/Products/Debug-iphoneos/SelfSignedApp.app /Users/$[YOUR_USER_NAME]/Desktop/</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat18.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat18.png" alt="070813_1648_IOSApplicat18"></a></p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat19.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat19.png" alt="070813_1648_IOSApplicat19"></a></p>
+<p>现在创建一个目录叫做Payload，把SelfSigned.app放到里面。然后压缩Payload目录（压缩文件会被命名为 Payload.zip）并重命名Payload.zip为SelfSigned.ipa。这个ipa文件就是我们前面提到的iOS应用的格式。</p>
+<ul>
+<li><h1 id="安装应用"><a href="#安装应用" class="headerlink" title="安装应用"></a>安装应用</h1><p>有了这个ipa文件之后，我们有两种方式安装它。第一种方法就是直接把这个ipa拖到iTunes的apps部分，然后用iTunes把应用安装到设备上；另一个方法是用sftp把ipa上传到设备，然后用一个叫做installipa的工具来安装它。可以通过Cydia来下载installipa：</p>
+</li>
+</ul>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat20.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat20.png" alt="070813_1648_IOSApplicat20"></a></p>
+<p>然后用ssh登录，在命令行用installipa安装：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat21.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/070813_1648_IOSApplicat21.png" alt="070813_1648_IOSApplicat21"></a></p>
+<p>这样就可以把应用安装到你的设备上了。你可能需要重启设备来让应用正常工作。</p>
+<ul>
+<li><h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>本文我们介绍了如何在没有开发者证书的情况下把自定义应用安装到越狱设备上。接下来，我们将用这些技巧来安装应用并在设备上做各种测试。</p>
+</li>
+<li><h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a href="http://resources.infosecinstitute.com/ios-application-security-part-7-installing-and-running-custom-applications-on-device-without-a-registered-developer-account/" title="Installing and Running Custom Applications on Device without a registered developer account" target="_blank" rel="external">http://resources.infosecinstitute.com/ios-application-security-part-7-installing-and-running-custom-applications-on-device-without-a-registered-developer-account/</a></p>
+</li>
+</ul>
+</div><!-- comment system--><div data-thread-key="2014/01/20/ios/ios-security-installing-and-running-apps-without-registered-developer-account/" data-title="iOS安全（六）之不注册开发者账号在设备上运行自定义应用" data-url="http://lsq.me/2014/01/20/ios/ios-security-installing-and-running-apps-without-registered-developer-account/" class="container ds-share flat"><div class="ds-share-inline"><ul class="ds-share-icons-16"><li data-toggle="ds-share-icons-more"><a href="javascript:void(0);" class="ds-more">分享到：</a></li><li><a href="javascript:void(0);" data-service="weibo" class="ds-weibo">微博</a></li><li><a href="javascript:void(0);" data-service="qzone" class="ds-qzone">QQ空间</a></li><li><a href="javascript:void(0);" data-service="qqt" class="ds-qqt">腾讯微博</a></li><li><a href="javascript:void(0);" data-service="wechat" class="ds-wechat">微信</a></li></ul><div class="ds-share-icons-more"></div></div></div><div class="container"><hr><div data-thread-key="2014/01/20/ios/ios-security-installing-and-running-apps-without-registered-developer-account/" data-title="iOS安全（六）之不注册开发者账号在设备上运行自定义应用" data-url="http://lsq.me/2014/01/20/ios/ios-security-installing-and-running-apps-without-registered-developer-account/" data-author-key="1" class="ds-thread"></div></div></article><footer id="footer"><div class="container"><div class="bar"><div class="social"><a href="mailto:qsunme@126.com" target="_blank"><i class="fa fa-envelope-o"></i></a><a href="https://github.com/iT2afL0rd" target="_blank"><i class="fa fa-github"></i></a><a href="/atom.xml" target="_blank"><i class="fa fa-rss"></i></a></div><div class="footer">© 2016 <a href="/" rel="nofollow">iT2afL0rd's Blog</a>. Powered by <a rel="nofollow" target="_blank" href="https://hexo.io">Hexo</a>. Theme <a target="_blank" href="https://github.com/lotabout/very-simple">very-simple</a>.</div></div></div></footer><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+    $(".fancybox").fancybox();
+});</script></body></html>

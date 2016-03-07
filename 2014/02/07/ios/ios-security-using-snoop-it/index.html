@@ -1,0 +1,63 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>iOS安全（八）之用Snoop-it分析iOS应用 | iT2afL0rd's Blog</title><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/very-simple.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"></head><body><!-- include the sidebar--><!-- include ./includes/sidebar.jade--><!-- Blog title and subtitle--><header><div class="container header"><a id="logo" href="/." class="title">iT2afL0rd's Blog</a><span class="subtitle">Energy and Persistence conquers</span><label id="toggle-menu" for="menu" onclick><i class="fa fa-bars"></i></label></div></header><!-- use checkbox hack for toggle nav-bar on small screens--><input id="menu" type="checkbox"><!-- Navigation Links--><nav id="nav"><div class="container"><a href="/" class="sidebar-nav-item active">Home</a><a href="/archives" class="sidebar-nav-item">Archives</a></div></nav><div id="header-margin-bar"></div><!-- gallery that comes before the header--><div class="wrapper"><div class="container post-header"><h1>iOS安全（八）之用Snoop-it分析iOS应用</h1></div></div><div class="wrapper"><div class="container meta"><div class="post-time">2014-02-07</div><div class="post-categories"><a class="post-category-link" href="/categories/iOS/">iOS</a></div><div class="post-tags"><a class="post-tag-link" href="/tags/Snoop-it/">Snoop-it</a></div></div></div><article><div class="container post"><ul>
+<li><h1 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h1><p>在前面的文章中我们介绍了如何用class-dump-z来导出iOS应用的类信息，如何利用Cycript挂钩进程和替换方法。但是，整个的分析过程却略显复杂，如果有一个工具能够做所有这些事情并且能够更好的展示这些信息就更好了。</p>
+</li>
+</ul>
+<p>本文我们就来介绍这样一个工具，它就是snoop-it。它提供一个非常简洁的web界面，并允许我们进行运行时分析和对iOS应用进行黑盒安全评估。可以从<a href="https://code.google.com/p/snoop-it/" title="snoop-it" target="_blank" rel="external">官网</a>上看到它的介绍：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/01/ios_security8_snoop_it_1.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/01/ios_security8_snoop_it_1.jpg" alt="ios_security8_snoop_it_1"></a><a id="more"></a></p>
+<ul>
+<li><h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>目前snoop-it已经可以通过在Cydia上添加源、然后直接下载安装了。请在Cydia中添加源：<a href="http://repo.nesolabs.de/，然后进入源中下载snoop-it。如何添加源和下载请参阅前面的文章。" target="_blank" rel="external">http://repo.nesolabs.de/，然后进入源中下载snoop-it。如何添加源和下载请参阅前面的文章。</a></p>
+</li>
+</ul>
+<p>安装完成之后，你的桌面上会多一个Snoop-it的图标：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/02/IMG_0166.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/02/IMG_0166.png" alt="IMG_0166"></a></p>
+<p>点开它，在应用下方的标签页中选择“Settings”，可以看到Snoop-it提供的Web页面的相关信息：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/02/IMG_0167.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/02/IMG_0167.png" alt="IMG_0167"></a></p>
+<p>我这里的Web页面地址是：<a href="http://10.64.81.85:12345，登陆的账号和密码都是：snoop-it。可以试着打开这个网页：" target="_blank" rel="external">http://10.64.81.85:12345，登陆的账号和密码都是：snoop-it。可以试着打开这个网页：</a></p>
+<p><a href="http://wildpointer.qiniudn.com/2014/02/snoopit_web01.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/02/snoopit_web01.jpg" alt="snoopit_web01"></a></p>
+<p>打开之后，可以浏览下这个页面，它介绍了snoop-it的基本使用步骤。按照介绍的步骤，我们需要在snoop-it应用中选择要分析的应用，然后打开选择的应用，再刷新这个Web页面。</p>
+<p>现在回到snoop-it，选择要分析的应用。这里继续选择上一篇中介绍的MethodSwizzlingDemo应用：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/02/IMG_0168.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/02/IMG_0168.png" alt="IMG_0168"></a></p>
+<p>选择好之后，退出Snoop-it，打开MethodSwizzlingDemo应用并将其保持在前台，然后刷新Web页面：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/02/snoopit_web02.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/02/snoopit_web02.jpg" alt="snoopit_web02"></a></p>
+<p>现在我们看到了一个还算不错的分析界面，接下来可以对这个应用进行详尽的安全评估了。</p>
+<ul>
+<li><h1 id="查看类信息"><a href="#查看类信息" class="headerlink" title="查看类信息"></a>查看类信息</h1><p>点击Web页面左边Analysis下面的Objective-C Classes标签，在右边就可以看到所有的类信息，比如属性和方法名。细心一点你会发现，这和我们在上一篇中用class-dump-z看到的是一样的：</p>
+</li>
+</ul>
+<p><a href="http://wildpointer.qiniudn.com/2014/02/snoopit_web03.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/02/snoopit_web03.jpg" alt="snoopit_web03"></a></p>
+<p>在上图中间一栏的类结构中，有绿色和红色的图标。绿色的代表有实例的类，把鼠标移上去还可以看到类实例的信息：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/02/snoopit_web04.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/02/snoopit_web04.jpg" alt="snoopit_web04"></a></p>
+<p>你也可以点击其他的类来看其他类的信息。</p>
+<ul>
+<li><h1 id="调用类方法"><a href="#调用类方法" class="headerlink" title="调用类方法"></a>调用类方法</h1><p>用snoop-it除了可以查看类信息之外，也可以调用类的方法。点击ViewController类，在右边选中pushLoginPage方法（调用这个方法可以绕过应用的验证，直接进入登录界面），然后点击右上角的Setup and Invoke按钮：</p>
+</li>
+</ul>
+<p><a href="http://wildpointer.qiniudn.com/2014/02/snoopit_web05.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/02/snoopit_web05.jpg" alt="snoopit_web05"></a></p>
+<p>在弹出的框体中选择对应的实例（这里只有一个实例，如果ViewController类被复用就会有多个实例），然后点击Invoke Method按钮：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/02/snoopit_web06.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/02/snoopit_web06.jpg" alt="snoopit_web06"></a></p>
+<p>这时，手机上的应用已经由登录界面进入到了登录成功的界面了，然而我们却没有在手机上进行任何操作：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/02/IMG_0169.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/02/IMG_0169.png" alt="IMG_0169"></a></p>
+<ul>
+<li><h1 id="切换View-Controller"><a href="#切换View-Controller" class="headerlink" title="切换View Controller"></a>切换View Controller</h1><p>Snoop-it另一个比较强大的功能是可以切换到任意的View Controller。点击左边Analysis下面的View Controller，然后中间任意点击一个，右边就可以看到这个View的信息，右边的按钮Display Controller可以显示这个View，Reset Display可以取消显示。当前正在显示的View的Visible字段就是true。这个功能能够直接把view controller与对应的view关联起来，非常的实用：</p>
+</li>
+</ul>
+<p><a href="http://wildpointer.qiniudn.com/2014/02/snoopit_web07.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/02/snoopit_web07.jpg" alt="snoopit_web07"></a></p>
+<ul>
+<li><h1 id="运行时修改"><a href="#运行时修改" class="headerlink" title="运行时修改"></a>运行时修改</h1><p>Snoop-it还支持多种运行时修改，包括修改硬件标识符比如MAC地址，UDID，设备模型号等，这些都可以在右边的Runtime Manipulation下面看到。不仅如此，还可以用snoop-it跟踪方法和系统调用的流程。跟踪的调用级别可以在手机上snoop-it的设置页面里面设置：</p>
+</li>
+</ul>
+<p><a href="http://wildpointer.qiniudn.com/2014/02/snoopit_web08.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/02/snoopit_web08.jpg" alt="snoopit_web08"></a></p>
+<ul>
+<li><h1 id="监控"><a href="#监控" class="headerlink" title="监控"></a>监控</h1><p>除此之外，还可以用snoop-it查看哪些文件和目录目前正被应用访问，这个在右边Monitoring下面的FileSystem里可以看到。这个功能的实用之处在于当应用往DB写数据的时候，可以找出DB文件的名字。</p>
+</li>
+</ul>
+<p>同样在Monitoring下面还可以查看敏感API（包括访问地址簿、摄像头、设备UDID等）的调用，网络请求，Keychain数据等。</p>
+<ul>
+<li><h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>本文我们学习了如何使用Snoop-it来查看类信息，调用类方法以及进行运行时分析。给对iOS apps进行黑盒安全评估提供了很大的帮助。对于对iOS应用的安全感兴趣的人来说，Snoop-it是一个非常好的工具。</p>
+</li>
+<li><h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a href="http://resources.infosecinstitute.com/ios-application-security-part-9-analyzing-security-of-ios-applications-using-snoop-it/" title="snoop-it" target="_blank" rel="external">http://resources.infosecinstitute.com/ios-application-security-part-9-analyzing-security-of-ios-applications-using-snoop-it/</a></p>
+</li>
+</ul>
+</div><!-- comment system--><div data-thread-key="2014/02/07/ios/ios-security-using-snoop-it/" data-title="iOS安全（八）之用Snoop-it分析iOS应用" data-url="http://lsq.me/2014/02/07/ios/ios-security-using-snoop-it/" class="container ds-share flat"><div class="ds-share-inline"><ul class="ds-share-icons-16"><li data-toggle="ds-share-icons-more"><a href="javascript:void(0);" class="ds-more">分享到：</a></li><li><a href="javascript:void(0);" data-service="weibo" class="ds-weibo">微博</a></li><li><a href="javascript:void(0);" data-service="qzone" class="ds-qzone">QQ空间</a></li><li><a href="javascript:void(0);" data-service="qqt" class="ds-qqt">腾讯微博</a></li><li><a href="javascript:void(0);" data-service="wechat" class="ds-wechat">微信</a></li></ul><div class="ds-share-icons-more"></div></div></div><div class="container"><hr><div data-thread-key="2014/02/07/ios/ios-security-using-snoop-it/" data-title="iOS安全（八）之用Snoop-it分析iOS应用" data-url="http://lsq.me/2014/02/07/ios/ios-security-using-snoop-it/" data-author-key="1" class="ds-thread"></div></div></article><footer id="footer"><div class="container"><div class="bar"><div class="social"><a href="mailto:qsunme@126.com" target="_blank"><i class="fa fa-envelope-o"></i></a><a href="https://github.com/iT2afL0rd" target="_blank"><i class="fa fa-github"></i></a><a href="/atom.xml" target="_blank"><i class="fa fa-rss"></i></a></div><div class="footer">© 2016 <a href="/" rel="nofollow">iT2afL0rd's Blog</a>. Powered by <a rel="nofollow" target="_blank" href="https://hexo.io">Hexo</a>. Theme <a target="_blank" href="https://github.com/lotabout/very-simple">very-simple</a>.</div></div></div></footer><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+    $(".fancybox").fancybox();
+});</script></body></html>

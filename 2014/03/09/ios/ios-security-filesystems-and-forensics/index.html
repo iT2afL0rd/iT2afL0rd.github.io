@@ -1,0 +1,49 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>iOS安全（九）之iOS文件系统和取证 | iT2afL0rd's Blog</title><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/very-simple.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"></head><body><!-- include the sidebar--><!-- include ./includes/sidebar.jade--><!-- Blog title and subtitle--><header><div class="container header"><a id="logo" href="/." class="title">iT2afL0rd's Blog</a><span class="subtitle">Energy and Persistence conquers</span><label id="toggle-menu" for="menu" onclick><i class="fa fa-bars"></i></label></div></header><!-- use checkbox hack for toggle nav-bar on small screens--><input id="menu" type="checkbox"><!-- Navigation Links--><nav id="nav"><div class="container"><a href="/" class="sidebar-nav-item active">Home</a><a href="/archives" class="sidebar-nav-item">Archives</a></div></nav><div id="header-margin-bar"></div><!-- gallery that comes before the header--><div class="wrapper"><div class="container post-header"><h1>iOS安全（九）之iOS文件系统和取证</h1></div></div><div class="wrapper"><div class="container meta"><div class="post-time">2014-03-09</div><div class="post-categories"><a class="post-category-link" href="/categories/iOS/">iOS</a></div></div></div><article><div class="container post"><ul>
+<li><h1 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h1><p>本文里我们将要检验iOS文件系统，了解其目录的组织结构，查看一些重要的文件，然后再实践如何从数据库文件和plist文件中提取数据。我们将要了解应用程序如何将数据存储在它们的目录中（沙盒）以及如何将这些数据提取出来。</p>
+</li>
+</ul>
+<p>有一个很重要的事情需要注意，在前面的文章中，我们都是用root用户登录到设备的。但是其实还有一个用户名为mobile的用户，mobile用户的权限比root用户小。除了Cydia和少数一些应用外，其他应用都是以mobile权限运行的。苹果内部的一些守护进程和服务也是以root权限运行的。简单运行一下ps aux就可以看得很清楚。如下图所示，在最左边的一列就是用户，可以看到大部分应用都是以mobile用户运行的，只有极少数是用root权限的。一些通过Cydia安装的应用也可能会以root权限运行，一旦设备越狱了，root和mobile的默认密码都是alpine。<a id="more"></a></p>
+<p><a href="http://wildpointer.qiniudn.com/2014/03/1.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/03/1.jpg" alt="1"></a></p>
+<p>ssh到我们的设备，在/Applications目录下可以看到一些应用。这些应用中的大多数都是iOS的预装应用，也有些应用是通过Cydia安装的，比如Ternimal 应用。请注意，所有运行在/Applications的应用并不运行在沙盒环境里，而所有在/var/mobile/Applications目录下的应用都运行在一个沙盒环境下。文章后面会讨论沙盒。不过，它们默认依然以mobile用户运行，除非进行了专门的配置。</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/03/2.jpg" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/03/2.jpg" alt="2"></a></p>
+<p>所有从App Store下载的应用都运行于/var/mobile/Applications目录，这个目录也包含用其他第三方源如Cydia安装的应用。所有这些应用都运行在沙盒环境下。</p>
+<p>需要注意的是从iOS4开始，每个应用都驻留在叫做沙盒(Sandbox)的环境中。出于安全考虑，这样做的主要目的是不允许应用访问沙盒外的任何数据。不过，应用还是可以通过申请权限访问某些特定的用户数据，例如访问联系人信息，照片等等。不过，对这些也有不少争论。 例如从iOS6开始，应用在得到用户允许之后才能访问用户的联系人。而在这之前，应用不需要申请任何权限就能访问用户的联系人，这样的应用导致了很大的争议，例如Path。</p>
+<p>通过使用Entitlements，你可以访问沙盒外的很多东西。你可以读读这里的<a href="http://developer.apple.com/library/ios/" target="_blank" rel="external">文档</a>。例如，要获得一个用户calender的读权限，.entitlements文件中的entitlement key com.apple.security.personal-information.calendars必须标志为YES。</p>
+<p>让我们看看微信（WeChat）应用的目录结构，其他应用的目录结构是类似的：</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/03/Screen-Shot-2014-03-09-at-22.56.24.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/03/Screen-Shot-2014-03-09-at-22.56.24.png" alt="Screen Shot 2014-03-09 at 22.56.24"></a></p>
+<ul>
+<li>MicroMessenger.app(应用名称.app)文件夹包含所有的资源文件(images)，plist文件和应用的二进制文件。</li>
+<li><p>Documents目录用于存放任意文件。相对于应用文件来说，这提供了一个只能在应用内访问的单独目录。</p>
+</li>
+<li><p>tmp文件夹用于存放用户的临时数据，应用的开发者有责任释放被该文件夹占用的内存。</p>
+</li>
+<li><p>Library文件夹可以用来保存那些不是用户数据的文件。</p>
+</li>
+<li>StoreKit是存放内购相关数据的文件夹。</li>
+<li><h1 id="从数据库中收集信息"><a href="#从数据库中收集信息" class="headerlink" title="从数据库中收集信息"></a>从数据库中收集信息</h1><p>iOS应用用sqlite数据库存储信息，这些数据库文件通常以.db或者.sqlitedb结尾。对于开发者来说，许多功能比如Core Data， NSUserDefaults都从一个较低的层次操作这些sqlite数据库。可以从这些数据库中抽取出特定应用，甚至操作系统级别的许多信息。可能包括通话记录甚至应用内保存的邮件等等。要找到一个应用的所有.db文件，可以在应用目录中用命令 find . -name *.db：</p>
+</li>
+</ul>
+<p><a href="http://wildpointer.qiniudn.com/2014/03/Screen-Shot-2014-03-09-at-22.55.56.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/03/Screen-Shot-2014-03-09-at-22.55.56.png" alt="Screen Shot 2014-03-09 at 22.55.56"></a></p>
+<p>可以看到微信的所有的数据库文件，其中有个</p>
+<p>./Documents/40dfa4c78640407988f4e877857e5420/fts/fts_message.db</p>
+<p>文件引起了我的兴趣，从字面上看应该是存储信息的。接下来可以尝试用sqlite客户端来分析一下这个文件。这里需要在设备中安装sqlite客户端，比如sqlite3。用命令：sqlite</p>
+<p>./Documents/40dfa4c78640407988f4e877857e5420/fts/fts_message.db</p>
+<p>打开数据库文件。会得到一个解释器，然后输入命令：.headers on打开列表名称，然后用命令：.tables就可以看到所有的表了。</p>
+<p><a href="http://wildpointer.qiniudn.com/2014/03/Screen-Shot-2014-03-09-at-23.15.14.png" target="_blank" rel="external"><img src="http://wildpointer.qiniudn.com/2014/03/Screen-Shot-2014-03-09-at-23.15.14.png" alt="Screen Shot 2014-03-09 at 23.15.14"></a></p>
+<p>其中有个fts_username_id表，还有一些后缀是content的表。可以用sql 语句查看里面的内容，这里涉及到隐私问题，就不演示了。</p>
+<ul>
+<li><h1 id="从plist文件中获取信息"><a href="#从plist文件中获取信息" class="headerlink" title="从plist文件中获取信息"></a>从plist文件中获取信息</h1><p>plist是用户存放许多不同设置和配置的结构化文本文件。因为这些数据都是以key-value这种键值对来存放的，所以要改变这些数据是非常容易的。然后许多开发者有时会在这些文件中存放许多不该存放的信息，更加危险的是即使在一个没有越狱的设备上，plist文件也可以通过工具读取，例如iExplorer。</p>
+</li>
+</ul>
+<p>Plist文件也可能包含机密信息，比如用户名和密码。<strong>有一个事情需要特别注意，任何人都可以从设备中导出plist文件，即使这个设备没有越狱。 你也可以从用户的iTunes 备份中导出这些plist文件。过去，有开发者把敏感数据存放在plist文件中，这是不正确的做法。</strong></p>
+<p>如果你想在terminal看这些plist文件，你可以先用工具plutil把它转化为xml格式，命令是 plutil -covert xml1 [filename]。</p>
+<p>查看plist文件虽然简单，但是如何去找到有价值的plist仍然是要花一番大功夫的。</p>
+<ul>
+<li><h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>在本文中，我们查看了iOS的文件系统，学习到其目录结构是如何组织的，同时查看了一些重要文件，并且学习了如何从数据库和plist文件中导出重要数据。在接下来的文章中，我们将用在前面一系列文章中学到的各种技术对一个例子应用进行详尽的安全分析。</p>
+</li>
+<li><h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a href="http://resources.infosecinstitute.com/ios-application-security-part-10-ios-filesystem-and-forensics/" title="ios-filesystem-and-forensics" target="_blank" rel="external">http://resources.infosecinstitute.com/ios-application-security-part-10-ios-filesystem-and-forensics/</a></p>
+</li>
+</ul>
+</div><!-- comment system--><div data-thread-key="2014/03/09/ios/ios-security-filesystems-and-forensics/" data-title="iOS安全（九）之iOS文件系统和取证" data-url="http://lsq.me/2014/03/09/ios/ios-security-filesystems-and-forensics/" class="container ds-share flat"><div class="ds-share-inline"><ul class="ds-share-icons-16"><li data-toggle="ds-share-icons-more"><a href="javascript:void(0);" class="ds-more">分享到：</a></li><li><a href="javascript:void(0);" data-service="weibo" class="ds-weibo">微博</a></li><li><a href="javascript:void(0);" data-service="qzone" class="ds-qzone">QQ空间</a></li><li><a href="javascript:void(0);" data-service="qqt" class="ds-qqt">腾讯微博</a></li><li><a href="javascript:void(0);" data-service="wechat" class="ds-wechat">微信</a></li></ul><div class="ds-share-icons-more"></div></div></div><div class="container"><hr><div data-thread-key="2014/03/09/ios/ios-security-filesystems-and-forensics/" data-title="iOS安全（九）之iOS文件系统和取证" data-url="http://lsq.me/2014/03/09/ios/ios-security-filesystems-and-forensics/" data-author-key="1" class="ds-thread"></div></div></article><footer id="footer"><div class="container"><div class="bar"><div class="social"><a href="mailto:qsunme@126.com" target="_blank"><i class="fa fa-envelope-o"></i></a><a href="https://github.com/iT2afL0rd" target="_blank"><i class="fa fa-github"></i></a><a href="/atom.xml" target="_blank"><i class="fa fa-rss"></i></a></div><div class="footer">© 2016 <a href="/" rel="nofollow">iT2afL0rd's Blog</a>. Powered by <a rel="nofollow" target="_blank" href="https://hexo.io">Hexo</a>. Theme <a target="_blank" href="https://github.com/lotabout/very-simple">very-simple</a>.</div></div></div></footer><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+    $(".fancybox").fancybox();
+});</script></body></html>

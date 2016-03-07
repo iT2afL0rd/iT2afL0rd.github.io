@@ -1,0 +1,67 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>CentOS安装MogileFS | iT2afL0rd's Blog</title><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/very-simple.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"></head><body><!-- include the sidebar--><!-- include ./includes/sidebar.jade--><!-- Blog title and subtitle--><header><div class="container header"><a id="logo" href="/." class="title">iT2afL0rd's Blog</a><span class="subtitle">Energy and Persistence conquers</span><label id="toggle-menu" for="menu" onclick><i class="fa fa-bars"></i></label></div></header><!-- use checkbox hack for toggle nav-bar on small screens--><input id="menu" type="checkbox"><!-- Navigation Links--><nav id="nav"><div class="container"><a href="/" class="sidebar-nav-item active">Home</a><a href="/archives" class="sidebar-nav-item">Archives</a></div></nav><div id="header-margin-bar"></div><!-- gallery that comes before the header--><div class="wrapper"><div class="container post-header"><h1>CentOS安装MogileFS</h1></div></div><div class="wrapper"><div class="container meta"><div class="post-time">2014-07-26</div><div class="post-categories"><a class="post-category-link" href="/categories/MogileFS/">MogileFS</a></div></div></div><article><div class="container post"><h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>这篇文章讲述了如何在CentOS上安装MogileFS以及进行简单的配置，希望能给使用MogileFS带来一些帮助。MogileFS一般安装在服务器集群中，为了简化，本文将在一台服务器上安装多个组件，并假定服务器IP为<code>192.168.17.121</code>，假定MySQL的IP地址为<code>192.168.17.120</code>。</p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><h3 id="安装MySQL依赖"><a href="#安装MySQL依赖" class="headerlink" title="安装MySQL依赖"></a>安装MySQL依赖</h3><p>MogileFS安装过程中需要连接MySQL测试，所以需要安装MySQL依赖的头文件：</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">$ <span class="built_in">sudo</span> yum install -y mysql-devel</div><br><br></pre><br><br></figure>
+
+<h3 id="安装CPAN"><a href="#安装CPAN" class="headerlink" title="安装CPAN"></a>安装CPAN</h3><p><code>cpan</code>是对Perl程序进行管理的工具，类似于Python中的pip以及Node.js里面的npm。MogileFS是用Perl开发的，所以使用cpan来安装非常方便。安装cpan可以用类似于上面的命令：</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">$ <span class="built_in">sudo</span> yum install -y cpan</div><br><br></pre><br><br></figure>
+
+<p><a id="more"></a></p>
+<h3 id="安装MogileFS"><a href="#安装MogileFS" class="headerlink" title="安装MogileFS"></a>安装MogileFS</h3><p>cpan安装好了之后就可以安装MogileFS了，MogileFS还依赖Perl的几个其他模块，所以用下面的脚本一并安装：</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">$ env PERL_MM_USE_DEFAULT=<span class="number">1</span> perl -MCPAN <span class="operator">-e</span> <span class="string">‘install “YAML”‘</span></div><br><br><div class="line">$ env PERL_MM_USE_DEFAULT=<span class="number">1</span> perl -MCPAN <span class="operator">-e</span> <span class="string">‘install “DBI”‘</span></div><br><br><div class="line">$ env PERL_MM_USE_DEFAULT=<span class="number">1</span> perl -MCPAN <span class="operator">-e</span> <span class="string">‘install “DBD::mysql”‘</span></div><br><br><div class="line">$ env PERL_MM_USE_DEFAULT=<span class="number">1</span> perl -MCPAN <span class="operator">-e</span> <span class="string">‘install “MogileFS::Server”‘</span></div><br><br><div class="line">$ env PERL_MM_USE_DEFAULT=<span class="number">1</span> perl -MCPAN <span class="operator">-e</span> <span class="string">‘install “MogileFS::Server”‘</span></div><br><br><div class="line">$ env PERL_MM_USE_DEFAULT=<span class="number">1</span> perl -MCPAN <span class="operator">-e</span> <span class="string">‘install “MogileFS::Utils”‘</span></div><br><br></pre><br><br></figure>
+
+<p>实际安装的时候<code>MogileFS::Server</code>第一次时会失败，所以安装了两次。</p>
+<h3 id="创建数据库"><a href="#创建数据库" class="headerlink" title="创建数据库"></a>创建数据库</h3><p>如何安装数据库不在本文的范围之内，MogileFS推荐使用MySQL主／从架构。MySQL安装好了之后需要创建一个数据库和一个用户mogile（密码也是mogile）来访问：</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">mysql&gt; CREATE DATABASE mogilefs;</div><br><br><div class="line">mysql&gt; GRANT ALL ON mogilefs.* TO <span class="string">‘mogile’</span>@<span class="string">‘%’</span>;</div><br><br><div class="line">mysql&gt; SET PASSWORD FOR <span class="string">‘mogile’</span>@<span class="string">‘%’</span>= PASSWORD(<span class="string">‘mogile’</span>);</div><br><br><div class="line">mysql&gt; FLUSH PRIVILEGES;</div><br><br><div class="line">mysql&gt; quit</div><br><br></pre><br><br></figure>
+
+<p>数据库创建好了之后还是空的，现在需要创建MogileFS使用的数据表。在上面我们安装的<code>MogileFS::Utils</code>模块里面有一个<code>mogdbsetup</code>程序，使用它可以帮我们创建表结构：</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">$ mogdbsetup –dbhost=<span class="number">192.168</span>.<span class="number">17.120</span> –dbname=mogilefs –dbuser=mogile –dbpassword=mogile</div><br><br></pre><br><br></figure>
+
+<blockquote>
+<p>注意，这里要把dbhost等配置换成你自己的。</p>
+</blockquote>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><h3 id="Tracker配置"><a href="#Tracker配置" class="headerlink" title="Tracker配置"></a>Tracker配置</h3><p>在Tracker服务器上新建文件<strong><em>/etc/mogilefs/mogilefsd.conf</em></strong>，内容如下：</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">db_dsn = DBI:mysql:mogilefs:host=<span class="number">192.168</span>.<span class="number">17.120</span>;port=<span class="number">3306</span>;mysql_connect_timeout=<span class="number">5</span></div><br><br><div class="line">db_user = mogile</div><br><br><div class="line">db_pass = mogile</div><br><br><div class="line">conf_port =<span class="number">7001</span></div><br><br><div class="line">listener_jobs =<span class="number">5</span></div><br><br><div class="line">node_timeout =<span class="number">5</span></div><br><br><div class="line">rebalance_ignore_missing =<span class="number">1</span></div><br><br></pre><br><br></figure>
+
+<p>db_dsn, db_user, db_pass是指向数据库的一些配置，剩下的是配置暂时不需要管，后面会介绍。</p>
+<h4 id="创建用户"><a href="#创建用户" class="headerlink" title="创建用户"></a>创建用户</h4><p>Tracker进程mogilefsd是不能以root用户启的，所以需要一个非root用户，通常做法是创建一个新的用户mogile（这里的mogile是服务器的用户，和上面的数据库用户是不同的）：</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">$ adduser mogile</div><br><br></pre><br><br></figure>
+
+<h3 id="存储节点配置"><a href="#存储节点配置" class="headerlink" title="存储节点配置"></a>存储节点配置</h3><p>在存储节点上，创建存储目录<code>/var/mogdata</code>，这个目录的权限不用管。然后新建配置文件<strong><em>/etc/mogilefs/mogstored.conf</em></strong>，内容如下：</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">httplisten=<span class="number">0.0</span>.<span class="number">0.0</span>:<span class="number">7500</span></div><br><br><div class="line">mgmtlisten=<span class="number">0.0</span>.<span class="number">0.0</span>:<span class="number">7501</span></div><br><br><div class="line">docroot=/var/mogdata</div><br><br></pre><br><br></figure>
+
+<p>这里的配置docroot表示所有的文件存储的根目录在<code>/var/mogdata</code>。</p>
+<h2 id="启动MogileFS"><a href="#启动MogileFS" class="headerlink" title="启动MogileFS"></a>启动MogileFS</h2><p>存储节点和Tracker配置好了之后，我们就要来启动他们了。</p>
+<h3 id="启动存储节点"><a href="#启动存储节点" class="headerlink" title="启动存储节点"></a>启动存储节点</h3><p>启动存储节点比较简单，首先切到root用户，然后运行命令：</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">$ mogstored <span class="operator">-d</span></div><br><br></pre><br><br></figure>
+
+<blockquote>
+<p>这里要注意的是，如果你的服务器环境中设置了代理，需要先把代理去掉，用<code>unset http_proxy</code>命令。</p>
+</blockquote>
+<h3 id="启动Tracker"><a href="#启动Tracker" class="headerlink" title="启动Tracker"></a>启动Tracker</h3><p>上面说了，Tracker不能用root用户启，所以需要换到mogile用户：</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">$ su mogile</div><br><br><div class="line">$ mogilefsd -c /etc/mogilefs/mogilefsd.conf –daemon</div><br><br></pre><br><br></figure>
+
+<p>同样需要注意代理的问题。</p>
+<h3 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h3><p>启动完成之后，可以先ps看一下进程是否存在。然后可以用<code>mogadm check</code>检查一下（这里只能看到Tracker是没问题的，因为其他的都还没有配置）。</p>
+<h2 id="正式使用"><a href="#正式使用" class="headerlink" title="正式使用"></a>正式使用</h2><p>到这里，MogileFS已经安装完成了。在正式使用之前，还需要再做一些配置。</p>
+<h3 id="新增host"><a href="#新增host" class="headerlink" title="新增host"></a>新增host</h3><p>前面说的存储节点只是对应一台服务器的进程，启动了之后还需要告诉整个集群，需要显示的通过命令来增加：</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">$ mogadm host add storage1 –ip=<span class="number">192.168</span>.<span class="number">17.121</span> –port –status=alive</div><br><br></pre><br><br></figure>
+
+<p>这里我们增加了一个名为storage1的host，这个名字可以自定，要注意把IP换成服务器对应的IP。</p>
+<h3 id="新增device"><a href="#新增device" class="headerlink" title="新增device"></a>新增device</h3><p>host加好了之后，需要给这个host挂上硬盘（不然文件存在哪里呢）。还记得上面说的/var/mogdata目录吗？现在根据服务器的状况到这个目录下新建目录吧。我们假定我们这台服务器上有两块2T的硬盘，那么我就需要建两个目录：<code>dev1</code>和<code>dev2</code>。然后分别将这两块硬盘挂载在目录下（怎么挂载这里不多说，网上很多教程）。接下来用命令：</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">$ mogadm device add storage1 <span class="number">1</span></div><br><br><div class="line">$ mogadm device add storage1 <span class="number">2</span></div><br><br></pre><br><br></figure>
+
+<p>这个命令表示在storage1这个host下加两个device，后面的数字和挂载的目录名字对应，上面我建的目录是dev1和dev2，如果你的系统里硬盘很多，你建了dev25，那么加的时候最后应该是25。<br>加完了host和device之后再用<code>mogadm check</code>命令就会发现也可以检查到host和device的状态了。</p>
+<h3 id="新增domain和class"><a href="#新增domain和class" class="headerlink" title="新增domain和class"></a>新增domain和class</h3><p>host和device增加了之后，文件就有了存放的地方了。但是还是得考虑一下文件该怎么组织，总要分个<code>文件夹</code>什么的吧？不然怎么找呢？是的，接下来就需要增加domain和class了。文件真正都是存储在一个class中的，domain是class的上层组织，一个domain中可以有多个class。</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">$ mogadm domain add test_domain</div><br><br><div class="line">$ mogadm class add test_domain test_class</div><br><br></pre><br><br></figure>
+
+<p>上面这个脚本就加了一个test_domain，并且在这个domain中加了一个test_class的class。</p>
+<h3 id="上传文件"><a href="#上传文件" class="headerlink" title="上传文件"></a>上传文件</h3><p>有了domain和class之后我们就可以上传文件了，这里只用了MogileFS自带的命令，实际使用中可以找各个版本实现的客户端。</p>
+<figure class="highlight bash"><br><br><pre><br><br><div class="line">$ mogupload –trackers=<span class="number">192.168</span>.<span class="number">17.121</span>:<span class="number">7001</span> –domain=test_domain –key=<span class="string">‘hello_world’</span> –file=<span class="string">‘./hello.jpg’</span></div><br><br></pre><br><br></figure>
+
+<blockquote>
+<p>这里MogileFS自带的命令行工具没有设置class的参数，默认是<code>default</code>class，其他的客户端，例如Python客户端会有class参数。</p>
+</blockquote>
+<h2 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h2><p>接下来就可以在自己的模块中使用MogileFS了。</p>
+</div><!-- comment system--><div data-thread-key="2014/07/26/mogilefs/mogilefs-intall-how-to/" data-title="CentOS安装MogileFS" data-url="http://lsq.me/2014/07/26/mogilefs/mogilefs-intall-how-to/" class="container ds-share flat"><div class="ds-share-inline"><ul class="ds-share-icons-16"><li data-toggle="ds-share-icons-more"><a href="javascript:void(0);" class="ds-more">分享到：</a></li><li><a href="javascript:void(0);" data-service="weibo" class="ds-weibo">微博</a></li><li><a href="javascript:void(0);" data-service="qzone" class="ds-qzone">QQ空间</a></li><li><a href="javascript:void(0);" data-service="qqt" class="ds-qqt">腾讯微博</a></li><li><a href="javascript:void(0);" data-service="wechat" class="ds-wechat">微信</a></li></ul><div class="ds-share-icons-more"></div></div></div><div class="container"><hr><div data-thread-key="2014/07/26/mogilefs/mogilefs-intall-how-to/" data-title="CentOS安装MogileFS" data-url="http://lsq.me/2014/07/26/mogilefs/mogilefs-intall-how-to/" data-author-key="1" class="ds-thread"></div></div></article><footer id="footer"><div class="container"><div class="bar"><div class="social"><a href="mailto:qsunme@126.com" target="_blank"><i class="fa fa-envelope-o"></i></a><a href="https://github.com/iT2afL0rd" target="_blank"><i class="fa fa-github"></i></a><a href="/atom.xml" target="_blank"><i class="fa fa-rss"></i></a></div><div class="footer">© 2016 <a href="/" rel="nofollow">iT2afL0rd's Blog</a>. Powered by <a rel="nofollow" target="_blank" href="https://hexo.io">Hexo</a>. Theme <a target="_blank" href="https://github.com/lotabout/very-simple">very-simple</a>.</div></div></div></footer><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+    $(".fancybox").fancybox();
+});</script></body></html>
