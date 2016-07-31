@@ -1,0 +1,76 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>Windows下构建Node.js的Docker Nano Server基础镜像 | iT2afL0rd Blog</title><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/very-simple.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"></head><body><!-- include the sidebar--><!-- include ./includes/sidebar.jade--><!-- Blog title and subtitle--><header><div class="container header"><a id="logo" href="/." class="title">iT2afL0rd Blog</a><span class="subtitle">Energy and Persistence conquers</span><label id="toggle-menu" for="menu" onclick><i class="fa fa-bars"></i></label></div></header><!-- use checkbox hack for toggle nav-bar on small screens--><input id="menu" type="checkbox"><!-- Navigation Links--><nav id="nav"><div class="container"><a href="/" class="sidebar-nav-item active">Home</a><a href="/archives" class="sidebar-nav-item">Archives</a></div></nav><div id="header-margin-bar"></div><!-- gallery that comes before the header--><div class="wrapper"><div class="container post-header"><h1>Windows下构建Node.js的Docker Nano Server基础镜像</h1></div></div><div class="wrapper"><div class="container meta"><div class="post-time">2016-06-21</div><div class="post-categories"><a class="post-category-link" href="/categories/Docker/">Docker</a></div><div class="post-tags"><a class="post-tag-link" href="/tags/NodeJS/">NodeJS</a></div></div></div><article><div class="container post"><p>从Windows 10内测版14342开始，就可以开启Windows中新的容器功能了。这让你可以直接在Windows 10里以Hyper-V容器的方式直接运行Windows容器。而且目前为止只支持Nano Server容器。因此，是时候开始适应Nano Server并创建一些基础镜像了。</p>
+<p><img src="http://7q5c45.com1.z0.glb.clouddn.com/containerswindows10-containers-feature.png" alt="Windows 10 container feature"></p>
+<p>在这篇博客里，我将展示如何构建小的基础镜像，并用Nano Server Docker镜像部署Node.js应用。然后在Windows 10或者Windows Server 2016 TP5中运行这些应用。</p>
+<h2 id="什么是Nano-Server-？"><a href="#什么是Nano-Server-？" class="headerlink" title="什么是Nano Server ？"></a>什么是Nano Server ？</h2><p>每个Docker镜像都必须使用两个OS镜像中的一个：<code>windowsservercore</code>或者<code>nanoserver</code>。</p>
+<p>Windows Server Core镜像是和之前的安装版本高度兼容的。你没有GUI界面，但是什么都可以安装。但是这种兼容性是有代价的，这个OS镜像的大小有9.3GB，因为它几乎包含了整个服务器。</p>
+<p>Nano Server镜像是一个经过高度优化的镜像。为了能在云服务器上部署更多这样的容器，它几乎把所有安装包都移除了。它的大小只有817MB，使得在Windows 10上安装Docker比用<code>windowsservercore</code>镜像快很多。</p>
+<p>因此，如果有人问该如何选择，我想答案应该是更小的那个。</p>
+<h2 id="挑战：MSI安装包"><a href="#挑战：MSI安装包" class="headerlink" title="挑战：MSI安装包"></a>挑战：MSI安装包</h2><p>当你开始尝试写Dockerfile往Docker镜像中安装一些软件的时候，你会注意到这个最小化的系统带来了新的挑战。<code>在Nano Server中无法安装MSI安装包</code>。</p>
+<p>在<a href="nodejs.org">Node.js官网</a>上可以看到，会同时安装npm的只有MSI的安装包。</p>
+<p>因此我们如何才可以基于Nano Server构建Node.js的Docker镜像呢？我试过很多方法，比如，在构建Nano Server镜像的时候同时安装lessmsi这样的工具，结果却发现lessmsi是一个32位的应用。Nano Server的另一个局限性就是只能运行64位应用。</p>
+<p>另一个方法是在Docker主机上安装Node.js然后把这些文件拷贝到Docker镜像中。但是我不想在Docker主机上安装额外的工具。</p>
+<p>因此，接下来我展示一下如何只用Docker命令和Windows Server 2016 TP5来构建Windows Server Core镜像和Nano Server镜像，并安装Node.js和npm。</p>
+<h3 id="第一步-在Windows-Server-Core镜像中安装MSI"><a href="#第一步-在Windows-Server-Core镜像中安装MSI" class="headerlink" title="第一步-在Windows Server Core镜像中安装MSI"></a>第一步-在Windows Server Core镜像中安装MSI</h3><p>从Windows Server Core镜像开始会更简单。你可以用下面这个Dockerfile下载安装Node.js MSI包。这个Dockerfile和Linux的版本很像，下载、验证、安装然后删除文件。</p>
+<p>现在打开编辑器：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">notepad Dockerfile.</span><br></pre></td></tr></table></figure>
+<p>然后输入下面的Dockerfile:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">FROM windowsservercore</span><br><span class="line"></span><br><span class="line">ENV NPM_CONFIG_LOGLEVEL info  </span><br><span class="line">ENV NODE_VERSION 4.4.5  </span><br><span class="line">ENV NODE_SHA256 7b2409605c871a40d60c187bd24f6f6ddf10590df060b7d905ef46b3b3aa7f81</span><br><span class="line"></span><br><span class="line">RUN powershell -Command \  </span><br><span class="line">    wget -Uri https://nodejs.org/dist/v%NODE_VERSION%/node-v%NODE_VERSION%-x64.msi -OutFile node.msi -UseBasicParsing ; \</span><br><span class="line">    if ((Get-FileHash node.msi -Algorithm sha256).Hash -ne $env:NODE_SHA256) &#123;exit 1&#125; ; \</span><br><span class="line">    Start-Process -FilePath msiexec -ArgumentList /q, /i, node.msi -Wait ; \</span><br><span class="line">    Remove-Item -Path node.msi</span><br><span class="line"></span><br><span class="line">CMD [ &quot;node.exe&quot; ]</span><br></pre></td></tr></table></figure>
+<p>接下来构建Node.js的Docker镜像：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build -t node:4.4.5 .</span><br></pre></td></tr></table></figure>
+<p>这样，Node.js和npm已经在你的Docker镜像中安装好了。</p>
+<h3 id="第二步-提取Node-js目录"><a href="#第二步-提取Node-js目录" class="headerlink" title="第二步-提取Node.js目录"></a>第二步-提取Node.js目录</h3><p>现在我们要从Docker镜像中提取Node.js的安装目录。我们需要运行一个Docker容器，然后把这个目录拷贝到宿主机的临时目录里：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">docker run --name=node-temp node:4.4.5 node --version  </span><br><span class="line">docker cp &quot;node-temp:c:\Program Files\nodejs&quot; nodejs  </span><br><span class="line">docker rm -vf node-temp</span><br></pre></td></tr></table></figure>
+<h3 id="第三步-拷贝部署到Nano-Server镜像"><a href="#第三步-拷贝部署到Nano-Server镜像" class="headerlink" title="第三步-拷贝部署到Nano Server镜像"></a>第三步-拷贝部署到Nano Server镜像</h3><p>我们就用这个提取出来的目录构建Nano Server镜像。下面的<code>Dockerfile</code>会把这个临时目录拷贝到Windows的PATH路径里。你也许想要把这些文件放到其他的目录里，但不要忘了把目录加到PATH里去。</p>
+<p>给Nano Server的Dockerfile创建一个子目录：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mkdir nano  </span><br><span class="line">notepad nano\Dockerfile.</span><br></pre></td></tr></table></figure>
+<p>然后创建Dockerfile：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">FROM nanoserver</span><br><span class="line"></span><br><span class="line">COPY nodejs /windows/system32</span><br><span class="line"></span><br><span class="line">CMD [ &quot;node.exe&quot; ]</span><br></pre></td></tr></table></figure>
+<p>运行下面的命令创建Nano Server镜像：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build -t node:4.4.5-nano nano</span><br></pre></td></tr></table></figure>
+<p>现在我们有了两个Docker镜像，一个是Windows Server Core，另一个是Nano Server。</p>
+<p>我画了一个简单的图，描述了在上面的三个步骤里我做了什么：</p>
+<p><img src="http://7q5c45.com1.z0.glb.clouddn.com/containersnodejs_nanoserver-2.png" alt="图解"></p>
+<p>我已经把这两个Docker镜像上传到DockerHub上了，并且发现Windows Server Core镜像大约55MB，Nano Server镜像只有9MB。</p>
+<p>我把第一个Docker镜像的所有层提取出来后发现，安装MSI包会在cache里面保存一份安装包的拷贝。运行命令也会使本地数据库发生一些改变。</p>
+<p>所以，如果要构建比较小的Windows Docker镜像，那就要避免安装MSI包。最好选择ZIP文件，甚至是使用COPY命令把文件拷贝到镜像。当然，MSI安装包会更方便，但是它的副作用就是镜像会比较大。</p>
+<h2 id="用ONBUILD命令构建应用"><a href="#用ONBUILD命令构建应用" class="headerlink" title="用ONBUILD命令构建应用"></a>用ONBUILD命令构建应用</h2><p>另一个Docker化Node.js应用的简单方法是使用Dockerfile的ONBUILD功能。在准备好的Docker镜像上使用这个功能是非常方便的，至少对于做个简单的例子来说是这样。</p>
+<p>让我们再创建一个和官方的<code>node:onbuild</code>镜像一样的Dockerfile，这个Dockerfile和上面的Dockerfile一样安装应用和所有依赖的程序：</p>
+<ul>
+<li>拷贝package.json</li>
+<li>运行npm install</li>
+<li>拷贝其他资源</li>
+</ul>
+<p>因此我们为这个Dockerfile创建了一个独立的目录：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mkdir nano\onbuild  </span><br><span class="line">notepad nano\onbuild\Dockerfile.</span><br></pre></td></tr></table></figure>
+<p> 然后输入内容：</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"> FROM node:4.4.5-nano</span><br><span class="line"></span><br><span class="line">RUN mkdir \app  </span><br><span class="line">WORKDIR /app</span><br><span class="line"></span><br><span class="line">ONBUILD COPY package.json package.json  </span><br><span class="line">ONBUILD RUN npm install  </span><br><span class="line">ONBUILD COPY . .</span><br><span class="line"></span><br><span class="line">CMD [ &quot;npm.cmd&quot;, &quot;start&quot; ]</span><br></pre></td></tr></table></figure>
+<p> 现在可以用ONBUILD功能构建Nano Server镜像：</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build --isolation=hyperv -t node:4.4.5-nano-onbuild nano/onbuild</span><br></pre></td></tr></table></figure>
+<p> 我已经用一个基于<code>Express</code>的小型Node.js Web Server测试过，没有任何问题。</p>
+<p> 现在要构建一个跑在Nano Server容器里的Docker化的Node.js应用，你只需要在你的Dockerfile上加一行：</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FROM nano:4.4.5-nano-onbuild</span><br></pre></td></tr></table></figure>
+<p> 然后构建Docker应用：</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build --isolation=hyperv -t mynodeapp:nano .</span><br></pre></td></tr></table></figure>
+<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>研究了这样的应用的镜像的所有层之后又发现了一些不必要的文件夹：</p>
+<ul>
+<li>npm-cache目录</li>
+<li>npm生产的很多临时目录</li>
+</ul>
+<p>因此我们可以优化上面的那个ONBUILD Dockerfile，在构建Docker镜像的时候把这些临时目录删掉。本来可以用<code>npm cache clean</code>命令，但是对我这里不起作用，所以我改用了一些<code>rd</code>命令。下面是最终版本的ONBUILD Dockerfile：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">FROM node:4.4.5-nano</span><br><span class="line"></span><br><span class="line">RUN mkdir \app  </span><br><span class="line">WORKDIR /app</span><br><span class="line"></span><br><span class="line">ONBUILD COPY package.json package.json  </span><br><span class="line">ONBUILD RUN npm install &amp; rd /s /q %APPDATA%\npm-cache &amp; for /d %G in (&quot;%TEMP%\npm-*&quot;) do rd /s /q &quot;%~G&quot;  </span><br><span class="line">ONBUILD COPY . .</span><br><span class="line"></span><br><span class="line">CMD [ &quot;npm.cmd&quot;, &quot;start&quot; ]</span><br></pre></td></tr></table></figure>
+<p>用这个优化后的Docker镜像部署一个Express服务器，最终的镜像大小从24MB减少到15MB。而DockerHub上的未经优化的Windows Server Core镜像在部署了Express之后达到了82MB。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>如果你不想自己手动构建这些Node.js应用，可以在<a href="https://hub.docker.com/r/stefanscherer/node-windows/" target="_blank" rel="external">Docker Hub</a>上找到它们，里面有Dockerfile在<a href="https://github.com/StefanScherer/dockerfiles-windows/tree/master/node" target="_blank" rel="external">GitHub</a>上的链接。</p>
+<p>有了Docker Hub上这样的Node.js Nano Server基础镜像，你可以在你的Windows 10机器上进行开发了。你可以Docker化你的Node.js应用，把它们放到Nano Server容器里，然后在Docker Hub上分享给其他人。</p>
+<p>Windows Server 2016只是用来安装MSI安装包，然后提取软件到Nano Server镜像的。</p>
+</div><!-- comment system--><div class="container"><hr><div data-thread-key="2016/06/21/containers/how-to-build-nodejs-nanoserver-image/" data-title="Windows下构建Node.js的Docker Nano Server基础镜像" data-url="http://lsq.me/2016/06/21/containers/how-to-build-nodejs-nanoserver-image/" class="ds-thread"></div><script>var duoshuoQuery = {short_name:'lamberts'};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0]
+        || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script></div></article><footer id="footer"><div class="container"><div class="bar"><div class="social"><a href="mailto:qsunme@vangoals.com" target="_blank"><i class="fa fa-envelope-o"></i></a><a href="https://github.com/iT2afL0rd" target="_blank"><i class="fa fa-github"></i></a><a href="/atom.xml" target="_blank"><i class="fa fa-rss"></i></a></div><div class="footer">© 2016 <a href="/" rel="nofollow">iT2afL0rd Blog</a>. Powered by <a rel="nofollow" target="_blank" href="https://hexo.io">Hexo</a>. Theme <a target="_blank" href="https://github.com/lotabout/very-simple">very-simple</a>.</div></div></div></footer><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+    $(".fancybox").fancybox();
+});</script></body></html>
